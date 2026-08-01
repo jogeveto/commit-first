@@ -19,7 +19,7 @@ La integración con LinkedIn se aísla tras `ILinkedInClient` (contrato del domi
 La selección es por configuración (DI), sin cambiar código de dominio. Trade-off: un punto de integración real queda sin ejercitar hasta tener credenciales → registrado en `wiring_checklist` (WC-002) como pendiente de verificación con proveedor real.
 
 ### D2 — `state` CSRF
-Al iniciar el flujo se genera un `state` aleatorio firmado/almacenado (cookie httpOnly o cache server-side con TTL). El callback exige coincidencia exacta; ausencia/mismatch → rechazo sin sesión (HU-001 AC3).
+Al iniciar el flujo se genera un `state` aleatorio criptográfico y se guarda server-side con **TTL** (10 min por defecto) y de **un solo uso**. El callback exige coincidencia exacta: ausencia, mismatch, reutilización o caducidad → rechazo sin sesión, y el intento queda registrado (HU-001 AC3). El TTL no es cosmético: sin él, los flujos que nadie completa acumulan `state` en memoria indefinidamente. Para producción multi-instancia se sustituye por cache distribuida o cookie firmada, sin cambiar el contrato `IAuthStateStore`.
 
 ### D3 — Provisión idempotente
 `users.linkedin_sub UNIQUE` (ya en el esquema del scaffold). El alta es un **único statement** —`INSERT ... ON CONFLICT (linkedin_sub) DO NOTHING; SELECT` del `User_ID`—, así que su atomicidad la garantiza Postgres sin transacción explícita: un fallo durante el alta no deja cuenta parcial (HU-002 AC2, verificado con un trigger que aborta el INSERT). **Si un slice posterior añade más escrituras al alta, habrá que envolverla en una transacción explícita**, porque entonces la atomicidad dejaría de ser gratis.

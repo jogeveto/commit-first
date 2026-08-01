@@ -17,6 +17,7 @@ Cada actividad del backbone mapea a las épicas: (1)→EP-001, cimiento transver
 | **Release 1 — MVP** | HU-001 (login LinkedIn) | HU-007 (perfil desde LinkedIn) | HU-010 (buscar en un portal) | HU-013 (CV adaptado) | HU-016 (% match ATS) |
 | | HU-002 (provisión cuenta) | HU-009 (persistir perfil) | HU-011 (dedup vacantes) | HU-014 (export PDF/DOCX) | HU-017 (form enriquecimiento <90%) |
 | | HU-003 (sesión por User_ID) | | HU-012 (historial vacantes) | HU-015 (prompts en BD) | HU-018 (sugerir descarte + persistir) |
+| | HU-021 (cerrar sesión) | | | | |
 | | HU-004 (esquema multi-tenant) *(cimiento transversal)* | | HU-020 (seguimiento de postulación) | | |
 | | HU-005 (acceso filtrado por tenant) *(cimiento transversal)* | | | | |
 | | HU-006 (guarda + prueba aislamiento) *(cimiento transversal)* | | | | |
@@ -25,7 +26,7 @@ Cada actividad del backbone mapea a las épicas: (1)→EP-001, cimiento transver
 
 ## Narrativa del journey
 
-1. **Entrar**: el usuario llega y se autentica con LinkedIn (sin contraseñas). En primer acceso se provisiona su cuenta y toda su sesión queda ligada a su `User_ID`. Transversalmente, el cimiento multi-tenant (esquema, filtrado por tenant, guarda de aislamiento) garantiza que sus datos nunca se crucen con los de otro usuario. Es la base sobre la que todo lo demás persiste.
+1. **Entrar**: el usuario llega y se autentica con LinkedIn (sin contraseñas). En primer acceso se provisiona su cuenta y toda su sesión queda ligada a su `User_ID`; al terminar puede cerrar sesión, algo necesario porque el equipo se comparte entre personas. Transversalmente, el cimiento multi-tenant (esquema, filtrado por tenant, guarda de aislamiento) garantiza que sus datos nunca se crucen con los de otro usuario. Es la base sobre la que todo lo demás persiste.
 2. **Preparar mi perfil**: al entrar, el sistema autopobla su perfil base desde LinkedIn y lo persiste. Opcionalmente (v1.1) puede subir un PDF para que el LLM local complete la información faltante sin formularios largos.
 3. **Buscar vacantes**: bajo demanda, el usuario busca vacantes en un portal. El sistema nunca le muestra una vacante que ya vio (dedup por `Vacante_ID × User_ID`) y guarda el historial de forma permanente.
 4. **Generar mi CV**: elige una vacante y el LLM local genera un CV adaptado a sus palabras clave, exportable en PDF y DOCX. Los prompts que guían al LLM viven en PostgreSQL y se editan en caliente.
@@ -35,7 +36,7 @@ Cada actividad del backbone mapea a las épicas: (1)→EP-001, cimiento transver
 
 La línea de corte MVP incluye **HU-001 a HU-007, HU-009 a HU-018** (todo menos HU-008) porque cubren el journey **mínimo viable completo**: el usuario puede entrar, tener perfil, buscar, generar CV y auditarlo con la regla de enriquecimiento < 90%. Esto entrega valor real end-to-end.
 
-- **Cimiento no negociable**: EP-001 (identidad) y EP-002 (aislamiento multi-tenant) están enteros en el MVP porque sin identidad ni tenancy ninguna otra actividad funciona ni es segura. Por eso la columna "Entrar" tiene 6 historias (más peso que las demás): concentra ambas épicas de cimiento.
+- **Cimiento no negociable**: EP-001 (identidad) y EP-002 (aislamiento multi-tenant) están enteros en el MVP porque sin identidad ni tenancy ninguna otra actividad funciona ni es segura. Por eso la columna "Entrar" tiene 7 historias (más peso que las demás): concentra ambas épicas de cimiento.
 - **Cierre del ciclo de valor**: sin la actividad 5 (auditar y decidir) el producto no cumple su promesa (superar el ATS), así que HU-016/017/018 entran al MVP.
 - **Lo diferible**: solo **HU-008** (complementar el perfil subiendo un PDF vía LLM) queda en v1.1. Razón: el perfil ya se autopobla desde LinkedIn (HU-007), que es suficiente para completar el journey; el PDF es un enriquecimiento de la ingesta, no un bloqueante. Un segundo portal de búsqueda también es post-MVP (un portal basta para validar el flujo).
 

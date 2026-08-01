@@ -9,7 +9,7 @@ namespace Backend.Tests;
 /// sería un assert vacuo: quien decide si la fila se escribe es el propio doble,
 /// no el código bajo prueba, así que daría 0 con cualquier comportamiento. La parte
 /// del AC que dice "sin cuenta parcial creada" se verifica contra PostgreSQL real
-/// en PostgresUserRepositoryTests.Fallo_al_persistir_no_deja_cuenta_en_la_base_de_datos.
+/// en PostgresUserRepositoryTests.Fallo_durante_el_alta_no_emite_sesion_ni_deja_cuenta.
 public class FailingUserRepository : IUserRepository
 {
     public Task<Guid?> FindByLinkedinSubAsync(string linkedinSub)

@@ -25,7 +25,7 @@ public class LinkedInAuthenticationServiceTests
     [Fact]
     public async Task Callback_con_state_valido_emite_sesion_ligada_al_UserId()
     {
-        var store = new InMemoryAuthStateStore();
+        var store = new FakeAuthStateStore();
         var repo = new InMemoryUserRepository();
         var (svc, _, _) = BuildService(store, repo);
         var state = store.Issue();
@@ -44,7 +44,7 @@ public class LinkedInAuthenticationServiceTests
     [Fact]
     public async Task Consentimiento_rechazado_no_emite_sesion()
     {
-        var store = new InMemoryAuthStateStore();
+        var store = new FakeAuthStateStore();
         var repo = new InMemoryUserRepository();
         var (svc, _, _) = BuildService(store, repo);
         var state = store.Issue();
@@ -62,7 +62,7 @@ public class LinkedInAuthenticationServiceTests
     [Fact]
     public async Task State_invalido_es_rechazado_sin_emitir_sesion()
     {
-        var store = new InMemoryAuthStateStore();
+        var store = new FakeAuthStateStore();
         var repo = new InMemoryUserRepository();
         var (svc, _, _) = BuildService(store, repo);
         store.Issue(); // se emitió un state legítimo, pero el callback llega con otro
@@ -82,7 +82,7 @@ public class LinkedInAuthenticationServiceTests
     [Fact]
     public async Task State_invalido_no_llega_a_canjear_el_code_con_LinkedIn()
     {
-        var store = new InMemoryAuthStateStore();
+        var store = new FakeAuthStateStore();
         var (svc, linkedIn, _) = BuildService(store, new InMemoryUserRepository());
         store.Issue();
 
@@ -96,7 +96,7 @@ public class LinkedInAuthenticationServiceTests
     [Fact]
     public async Task State_invalido_registra_el_intento()
     {
-        var store = new InMemoryAuthStateStore();
+        var store = new FakeAuthStateStore();
         var (svc, _, log) = BuildService(store, new InMemoryUserRepository());
         store.Issue();
 
@@ -111,7 +111,7 @@ public class LinkedInAuthenticationServiceTests
     [Fact]
     public async Task El_registro_del_intento_no_vuelca_el_state_recibido()
     {
-        var store = new InMemoryAuthStateStore();
+        var store = new FakeAuthStateStore();
         var (svc, _, log) = BuildService(store, new InMemoryUserRepository());
         store.Issue();
 
@@ -126,11 +126,11 @@ public class LinkedInAuthenticationServiceTests
     // emite sesión y hay un mensaje para el usuario.
     // La otra mitad del AC —"sin cuenta parcial creada"— NO se comprueba aquí: con
     // un doble sería un assert vacuo. Se verifica contra PostgreSQL real en
-    // PostgresUserRepositoryTests.Fallo_al_persistir_no_deja_cuenta_en_la_base_de_datos.
+    // PostgresUserRepositoryTests.Fallo_durante_el_alta_no_emite_sesion_ni_deja_cuenta.
     [Fact]
     public async Task Fallo_de_persistencia_no_emite_sesion()
     {
-        var store = new InMemoryAuthStateStore();
+        var store = new FakeAuthStateStore();
         var (svc, _, _) = BuildService(store, new FailingUserRepository());
         var state = store.Issue();
 

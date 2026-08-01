@@ -5,7 +5,7 @@
 # comprobaciones de base de datos. Se prefirió esto a una colección Newman/Postman
 # porque Newman no está en `.claude/config/stack-allowlist.json` y el valor de
 # regresión es el mismo. Cubre los AC verificables por HTTP; HU-002 AC2 (fallo de
-# persistencia) se cubre en los tests unitarios (FailingUserRepository), no aquí.
+# persistencia) se cubre contra Postgres real en PostgresUserRepositoryTests, no aquí.
 #
 # Uso:  bash tests/smoke/ep-001-api-contract.sh [base_url]
 #       (requiere el stack levantado: docker compose up -d)
@@ -136,18 +136,37 @@ contains "consentimiento rechazado → lleva mensaje para el usuario" "message="
 CLOC=$(curl -si "$BASE/auth/linkedin/callback?code=x&state=FORJADO" | grep -i '^location:' | tr -d '\r')
 contains "state inválido → vuelve a /login" "/login" "$CLOC"
 contains "state inválido → informa el motivo" "error=invalid_state" "$CLOC"
-check "ningún redirect de error lleva sesión" "0" \
-  "$(printf '%s\n%s\n' "$ELOC" "$CLOC" | grep -c 'token=' || true)"
+# Exige que ambos redirects existan: con entrada vacía este check pasaba solo
+# porque no había nada donde buscar (era el único verde con el backend caído).
+if [ -n "$ELOC" ] && [ -n "$CLOC" ] && ! printf '%s\n%s\n' "$ELOC" "$CLOC" | grep -q 'token='; then
+  PASS=$((PASS+1)); echo "  ✓ ningún redirect de error lleva sesión"
+else
+  FAIL=$((FAIL+1)); echo "  ✗ ningún redirect de error lleva sesión (ELOC='$ELOC' CLOC='$CLOC')"
+fi
 
 echo "-- HU-003 · endpoint protegido --"
 S=$(nuevo_state)
-TOKEN=$(curl -s "$BASE/auth/linkedin/callback?code=contract-me&state=$S&format=json" \
-  | grep -oE '"token":"[^"]+"' | cut -d'"' -f4)
+SESION=$(curl -s "$BASE/auth/linkedin/callback?code=contract-me&state=$S&format=json")
+TOKEN=$(printf '%s' "$SESION" | grep -oE '"token":"[^"]+"' | cut -d'"' -f4)
+USER_LOGIN=$(printf '%s' "$SESION" | grep -oE '"userId":"[^"]+"' | cut -d'"' -f4)
 check "GET /api/me con token válido → 200" "200" \
   "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$BASE/api/me")"
-contains "/api/me resuelve el User_ID de la sesión" '"userId":"' \
-  "$(curl -s -H "Authorization: Bearer $TOKEN" "$BASE/api/me")"
+
+# No basta con que el campo `userId` exista: debe ser EL MISMO usuario que emitió
+# la sesión (antes, un endpoint que devolviera cualquier UUID pasaba el check).
+USER_ME=$(curl -s -H "Authorization: Bearer $TOKEN" "$BASE/api/me" \
+  | grep -oE '"userId":"[^"]+"' | cut -d'"' -f4)
+if [ -n "$USER_ME" ] && [ "$USER_ME" = "$USER_LOGIN" ]; then
+  PASS=$((PASS+1)); echo "  ✓ /api/me resuelve el MISMO User_ID que emitió la sesión"
+else
+  FAIL=$((FAIL+1)); echo "  ✗ /api/me resuelve el mismo User_ID (me='$USER_ME' login='$USER_LOGIN')"
+fi
+
 check "GET /api/me sin token → 401" "401" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/me")"
+# Token no vacío + sufijo basura: con TOKEN vacío el 401 llegaría igual y el check
+# no probaría nada sobre la manipulación.
+[ -n "$TOKEN" ] && { PASS=$((PASS+1)); echo "  ✓ la sesión de prueba se emitió"; } \
+                || { FAIL=$((FAIL+1)); echo "  ✗ no se emitió sesión de prueba"; }
 check "GET /api/me con token manipulado → 401" "401" \
   "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${TOKEN}XXXX" "$BASE/api/me")"
 contains "401 anuncia el esquema Bearer" "WWW-Authenticate: Bearer" \

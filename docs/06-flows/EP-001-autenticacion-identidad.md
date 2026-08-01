@@ -1,7 +1,7 @@
 ---
 id: flow-001-autenticacion-identidad
 epica: EP-001
-historias_cubiertas: [HU-001, HU-002, HU-003]
+historias_cubiertas: [HU-001, HU-002, HU-003, HU-021]
 ---
 
 # Flow 001 — Autenticación e Identidad (LinkedIn OAuth2)
@@ -48,6 +48,10 @@ sequenceDiagram
   else token ausente/expirado/inválido
     Sistema-->>BE: 401 No autorizado (re-autenticar)
   end
+
+  %% HU-021
+  BE->>Sistema: Cerrar sesión ("Salir")
+  Sistema-->>BE: Descarta la sesión y vuelve a la pantalla de login
 ```
 
 ## Trazabilidad
@@ -63,7 +67,10 @@ sequenceDiagram
 | Petición autenticada resuelve User_ID | HU-003 | AC-1 (happy) |
 | Token ausente/inválido → 401 | HU-003 | AC-2 (error) |
 | Token expirado → 401 | HU-003 | AC-3 (edge) |
+| Cerrar sesión vuelve al login | HU-021 | AC-1 (happy) |
+| Tras salir no se vuelve al área autenticada | HU-021 | AC-2 (error) |
+| La sesión no sobrevive al cierre de la pestaña | HU-021 | AC-3 (edge) |
 
 ## Notas
 
-Las 3 HU de EP-001 quedan cubiertas. El ramal de error "fallo al persistir cuenta" (HU-002 AC-2) se resuelve dentro del paso de provisión: si la persistencia falla, no se emite sesión.
+Las 4 HU de EP-001 quedan cubiertas (HU-021 se añadió durante la construcción: el prototipo aprobado incluía el botón "Salir" sin historia que lo respaldara). El ramal de error "fallo al persistir cuenta" (HU-002 AC-2) se resuelve dentro del paso de provisión: si la persistencia falla, no se emite sesión.

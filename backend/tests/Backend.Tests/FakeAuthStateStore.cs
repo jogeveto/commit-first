@@ -6,7 +6,7 @@ namespace Backend.Tests;
 /// consume el `state` una sola vez. Modela la semántica CSRF (single-use) sin
 /// infraestructura. La idempotencia de un `state` no se reutiliza: tras validar,
 /// desaparece.
-public class InMemoryAuthStateStore : IAuthStateStore
+public class FakeAuthStateStore : IAuthStateStore
 {
     private readonly HashSet<string> _issued = new();
     private int _counter;

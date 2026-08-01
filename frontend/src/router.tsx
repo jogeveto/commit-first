@@ -12,7 +12,11 @@ import { RequireAuth } from './auth/RequireAuth'
 //
 // Login y callback viven FUERA del AppLayout: el login es una pantalla completa
 // (fiel al prototipo) y no debe mostrar la navegación del área autenticada.
-export const router = createBrowserRouter([
+// Las rutas se exportan aparte del router para poder montarlas en tests con un
+// router en memoria. Sin esto, la RAÍZ DE COMPOSICIÓN quedaba sin cubrir: se podía
+// quitar el guard o el layout de aquí y toda la suite seguía en verde, porque los
+// tests de componente montan su propio router en vez de estas rutas.
+export const routes = [
   { path: '/login', element: <Login /> },
   { path: '/auth/callback', element: <AuthCallback /> },
   {
@@ -31,4 +35,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-])
+]
+
+export const router = createBrowserRouter(routes)
