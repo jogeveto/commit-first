@@ -74,14 +74,14 @@
         "kind": "hu_ac",
         "ref": "HU-001#happy-oauth-exitoso",
         "status": "passing",
-        "evidence": "Unit (LinkedInAuthenticationServiceTests) + smoke HTTP: GET /auth/linkedin/start 302 con state → /callback 200 success + JWT (sub=userId, iss=empleabilidad). Nota: redirección a 'área autenticada' del SPA se completa en SS-001-c."
+        "evidence": "Backend: LinkedInAuthenticationServiceTests + JwtIssuerTests; contrato: /start 302 con state, callback 200 + JWT, redirect al SPA con #token. SPA: AuthCallback.test.tsx (aterrizaje e idempotencia), Login.test.tsx (el boton inicia el flujo del backend), router.test.tsx (con sesion se entra al area autenticada). Verificado end-to-end con clic real contra LinkedIn REAL (ver WC-002). MUTACIONES VERIFICADAS: revertir la idempotencia del callback, el boton navegando a otro sitio, y /login apuntando a otra pantalla -> rojo."
       },
       {
         "id": "HU-001-AC2",
         "kind": "hu_ac",
         "ref": "HU-001#error-consentimiento-rechazado",
         "status": "passing",
-        "evidence": "Unit + smoke HTTP: /callback con state válido + error=access_denied → 401 consent_rejected, sin sesión, mensaje explicable. users sin cambios."
+        "evidence": "Backend: consent_rejected sin sesion, con mensaje. Contrato: redirect a /login?error=consent_rejected&message=. UI: Login.test.tsx asserta que el aviso SE RENDERIZA en pantalla (la clausula 'con un mensaje claro' antes solo se comprobaba en la URL). MUTACION VERIFICADA: '{false && (' en el aviso -> rojo."
       },
       {
         "id": "HU-001-AC3",
@@ -123,7 +123,7 @@
         "kind": "hu_ac",
         "ref": "HU-003#happy-token-valido-resuelve-userid",
         "status": "passing",
-        "evidence": "Integración (SessionMiddlewareTests, WebApplicationFactory) + smoke HTTP: GET /api/me con Bearer válido → 200 {userId=sub}. Cableado E2E: /start→/callback emite JWT y /api/me lo resuelve al mismo User_ID."
+        "evidence": "SessionMiddlewareTests (token valido -> 200 con el User_ID del claim) + contrato: /api/me devuelve EL MISMO User_ID que emitio la sesion (antes solo se miraba que el campo existiera). SPA: client.test.ts asserta que el interceptor adjunta el Bearer. MUTACIONES VERIFICADAS: /api/me devolviendo otro Guid -> rojo; interceptor sin Bearer -> rojo."
       },
       {
         "id": "HU-003-AC2",
@@ -137,21 +137,21 @@
         "kind": "hu_ac",
         "ref": "HU-003#edge-token-expirado-401",
         "status": "passing",
-        "evidence": "Integración (SessionMiddlewareTests.Token_expirado_responde_401): token con lifetime negativo → 401. ClockSkew=Zero en AddJwtBearer (sin la tolerancia de 5 min por defecto que enmascararía la expiración)."
+        "evidence": "SessionMiddlewareTests: token expirado -> 401 (ClockSkew=Zero) y el reto WWW-Authenticate indica invalid_token/expired con cuerpo vacio (clausula 'indicacion de re-autenticar'). SPA: client.test.ts asserta que un 401 descarta la sesion y que un 500 NO la toca. MUTACION VERIFICADA: quitar el clearSession del interceptor -> rojo."
       },
       {
         "id": "HU-021-AC1",
         "kind": "hu_ac",
         "ref": "HU-021#happy-cerrar-sesion-vuelve-al-login",
         "status": "passing",
-        "evidence": "Test de COMPONENTE (App.test.tsx): se monta AppLayout en un router, se hace clic en el boton 'Salir' real y se asserta que la sesion queda descartada y que se renderiza la pantalla de login. MUTACIONES VERIFICADAS: quitar clearSession() del handler -> rojo; navegar a /perfil en vez de /login -> rojo. (Antes solo se llamaba a clearSession() desde el test, lo que dejaba pasar ambos defectos.)"
+        "evidence": "Tests de COMPONENTE y de COMPOSICION. App.test.tsx: se monta AppLayout, se hace clic en el boton 'Salir' real y se asserta sesion descartada + pantalla de login. router.test.tsx monta las RUTAS REALES de la app y comprueba que el area autenticada trae ese boton. MUTACIONES VERIFICADAS: quitar clearSession() -> rojo; navegar a /perfil -> rojo; borrar AppLayout del router -> rojo."
       },
       {
         "id": "HU-021-AC2",
         "kind": "hu_ac",
         "ref": "HU-021#error-volver-al-area-tras-salir",
         "status": "passing",
-        "evidence": "Test de COMPONENTE (RequireAuth.test.tsx): sin sesion no se renderiza el contenido privado y se llega al login; con sesion si pasa. MUTACION VERIFICADA: desactivar el guard con 'if (false)' -> rojo. La autoridad real sigue siendo el backend: /api/me responde 401 (verificado en el contrato)."
+        "evidence": "RequireAuth.test.tsx (componente) + router.test.tsx (rutas reales de la app: /perfil sin sesion acaba en el login). MUTACIONES VERIFICADAS: 'if (false)' en el guard -> rojo; borrar el guard de router.tsx -> rojo. La autoridad real sigue siendo el backend: /api/me responde 401 (contrato)."
       },
       {
         "id": "HU-021-AC3",
@@ -259,10 +259,15 @@
         "at": "2026-08-01T00:00:00Z",
         "by": "correcciones 3a auditoria (B1-B5)",
         "note": "3a auditoria: INCOHERENTE. Confirmo que el patron se repetia: cada correccion reintroducia el mismo defecto un nivel mas adentro (doble -> otra base de datos; funcion pura -> otro modulo puro; test unitario -> script de contrato). Adoptado su criterio: para cada assert nuevo, escribir que mutacion de produccion lo pone en rojo y EJECUTARLA. B1 (assert vacuo, 3a encarnacion): el fallo se inyectaba contra OTRA base, asi que pasaba incluso con cuenta parcial real -> ahora un trigger aborta el INSERT en la MISMA base; mutacion 'tragar el error y devolver Guid inventado' verificada ROJA. B2 (HU-021 probaba el modulo puro, no los controles): anadidos App.test.tsx y RequireAuth.test.tsx; las tres mutaciones del auditor (quitar clearSession, navegar a /perfil, desactivar el guard) verificadas ROJAS. B3 (contrato en rojo tras activar credenciales reales, con DOS VERDES FALSOS): guarda de modo que aborta con exit 2; comparacion de User_ID que exige valor no vacio; sub unico por corrida. Mutacion con backend caido: ambos checks ROJOS (antes verdes). B4: requisito 'Cierre de sesion' no tenia tasks -> anadidas 5.1-5.4; @testing-library/react registrado en el allowlist y jest-dom RETIRADO por huerfano. B5: corregida la deriva doc-realidad en tasks.md (Count real, 12 items, hueco de discovery) y design.md (D3 hablaba de transaccion/rollback inexistentes; riesgo de LinkedIn obsoleto). Verificacion: backend 25/25, frontend 21/21, contrato 26/26 exit 0 en modo mock (aborta en modo real), tsc exit 0."
+      },
+      {
+        "at": "2026-08-01T00:00:00Z",
+        "by": "correcciones 4a auditoria",
+        "note": "4a auditoria: confirmo B1-B5 corregidos y sensibles a mutacion (ejecuto 16 mutaciones), pero el patron reaparecio UN NIVEL MAS AFUERA: los tests montaban su propio router, asi que borrar el guard, el layout o la ruta de login de router.tsx dejaba la suite en verde. Se probaban las piezas, no que la app las use. CORREGIDO: `routes` se exporta aparte y router.test.tsx monta la composicion REAL (mata M7/M8/M9); Login.test.tsx cubre el aviso de error renderizado y el boton (M10/M11); client.test.ts cubre el interceptor Bearer y el descarte de sesion ante 401 (M13/M14). Las 7 mutaciones verificadas en rojo. DEFECTO DE PRODUCCION encontrado en la deriva documental: InMemoryAuthStateStore no tenia TTL pese a que design.md D2 lo prometia, asi que los `state` de flujos abandonados se acumulaban sin limite. Implementado TTL con reloj inyectable + purga; 5 tests nuevos. Contrato reforzado: /api/me compara el User_ID con el del login, y 'ningun redirect lleva sesion' exige que los redirects existan. Flow y Story Map ahora incluyen HU-021 (regla dura de docs/06-flows). Referencias colgantes corregidas. package-lock.json versionado. RAMA PUSHEADA (antes 7 commits solo en local). Verificacion: backend 30/30, frontend 33/33, contrato 27/27, tsc exit 0, openspec valido."
       }
     ],
     "updated_at": "2026-08-01T00:00:00Z",
-    "updated_by": "correcciones 3a auditoria; mutaciones verificadas"
+    "updated_by": "correcciones 4a auditoria; raiz de composicion cubierta"
   },
   "history": [],
   "releases": []
