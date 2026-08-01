@@ -19,3 +19,6 @@ ats-service/**/__pycache__/
 # OS
 Thumbs.db
 .DS_Store
+
+# Artefactos del MCP de navegador (evidencia efímera de verificación visual)
+.playwright-mcp/

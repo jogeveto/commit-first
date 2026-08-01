@@ -20,8 +20,20 @@
     "typescript",
     "vite",
     "@vitejs/plugin-react",
-    "axios"
+    "axios",
+    "@types/react",
+    "@types/react-dom",
+    "vitest",
+    "jsdom"
   ],
+  "allow_dotnet": {
+    "_comment": "Paquetes NuGet aprobados para el backend .NET. Mismo criterio que `allow`: derivados del PRD §7. Se registran por slice al agregarse.",
+    "Npgsql": "PRD §7 (datos: PostgreSQL). Driver oficial; acceso a `users` con INSERT ... ON CONFLICT para el alta idempotente (EP-001, design D3).",
+    "System.IdentityModel.Tokens.Jwt": "EP-001 design D4: emisión de la sesión JWT HS256 con claim sub=User_ID, firmada server-side.",
+    "Microsoft.AspNetCore.Authentication.JwtBearer": "EP-001 design D4 / HU-003: middleware que valida la sesión (firma, emisor, expiración con ClockSkew=0) y resuelve el User_ID de tenancy.",
+    "Microsoft.NET.Test.Sdk / xunit / xunit.runner.visualstudio": "Arnés de pruebas del backend (TDD del arnés de construcción).",
+    "Microsoft.AspNetCore.Mvc.Testing": "EP-001 SS-b: pruebas de integración HTTP del middleware de sesión (WebApplicationFactory), solo en el proyecto de tests."
+  },
   "deny_examples": [
     "openai",
     "@anthropic-ai/sdk",
@@ -36,6 +48,10 @@
     "vite": "Toolchain de build/dev del SPA (a confirmar en scaffold).",
     "@vitejs/plugin-react": "Plugin React para Vite.",
     "axios": "Cliente HTTP hacia la API .NET (JWT por User_ID).",
+    "@types/react": "Tipos de React. Faltaban en el scaffold y `tsc -b` fallaba, dejando roto `npm run build`. Solo desarrollo.",
+    "@types/react-dom": "Tipos de react-dom, por el mismo motivo. Solo desarrollo.",
+    "vitest": "Runner de pruebas del SPA (EP-001): el bug de idempotencia del callback se corrigió sin regresión y no había forma de cubrirlo. Es el runner nativo de Vite, ya en el stack. Solo desarrollo.",
+    "jsdom": "Entorno DOM para vitest: la lógica de sesión usa sessionStorage y el fragmento de la URL. Solo desarrollo.",
     "_deny_note": "Prohibidas las SDK de IA de pago: el PRD exige LLM local (O4, costo $0). deny_examples lista las más comunes a bloquear."
   }
 }

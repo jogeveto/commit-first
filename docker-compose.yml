@@ -24,9 +24,18 @@ services:
   backend:
     build: ./backend
     environment:
-      # Cadena de conexión (la usará EP-002; aquí solo se inyecta el patrón).
+      # Cadena de conexión a PostgreSQL (usada por EP-001 provisión + EP-002).
       ConnectionStrings__Default: "Host=db;Port=5432;Database=${POSTGRES_DB:-empleabilidad};Username=${POSTGRES_USER:-empleo};Password=${POSTGRES_PASSWORD:-empleo_dev}"
       ATS_SERVICE_URL: "http://ats-service:8000"
+      # Clave de firma JWT server-side (EP-001, design D4). Dev por defecto; en
+      # producción se inyecta por entorno seguro y NUNCA llega al frontend.
+      JWT_SIGNING_KEY: "${JWT_SIGNING_KEY:-dev-signing-key-cambiar-en-produccion-000000000000000000000000}"
+      # LinkedIn OAuth2 (mock-first): sin estas variables se usa FakeLinkedInClient.
+      LINKEDIN_CLIENT_ID: "${LINKEDIN_CLIENT_ID:-}"
+      LINKEDIN_CLIENT_SECRET: "${LINKEDIN_CLIENT_SECRET:-}"
+      LinkedIn__RedirectUri: "${LINKEDIN_REDIRECT_URI:-http://localhost:8080/auth/linkedin/callback}"
+      # Origen del SPA al que vuelve el usuario tras el callback OAuth2 (HU-001).
+      FRONTEND_URL: "${FRONTEND_URL:-http://localhost:5173}"
     ports:
       - "8080:8080"
     depends_on:
@@ -54,6 +63,12 @@ services:
       VITE_API_URL: "http://localhost:8080"
     ports:
       - "5173:5173"
+    # Código fuente montado para que el HMR de Vite recoja los cambios del host sin
+    # reconstruir la imagen (el host no tiene toolchain de Node: sigue siendo el
+    # contenedor quien compila). Solo lectura: el contenedor nunca escribe fuentes.
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/index.html:/app/index.html:ro
     depends_on:
       - backend
 
