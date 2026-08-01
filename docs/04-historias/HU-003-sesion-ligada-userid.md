@@ -5,6 +5,7 @@ epica: EP-001
 prioridad: Must
 complejidad: M
 estado: lista
+openspec_change: autenticacion-identidad-linkedin-oauth2
 ---
 
 # Emisión y validación de sesión ligada al User_ID

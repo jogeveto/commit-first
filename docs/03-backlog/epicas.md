@@ -22,6 +22,7 @@
 ## EP-001 — Autenticación e Identidad (LinkedIn OAuth2)
 
 **layer**: foundational
+**OpenSpec Change**: autenticacion-identidad-linkedin-oauth2 (en construcción)
 
 **Resumen**: Provee el único mecanismo de entrada al sistema: login vía LinkedIn OAuth2, sin contraseñas ni registro manual. En el primer login se provisiona la cuenta y se emite una sesión/JWT ligada al `User_ID`, que será la clave de aislamiento de todo el sistema.
 

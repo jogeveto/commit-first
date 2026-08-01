@@ -5,6 +5,7 @@ epica: EP-001
 prioridad: Must
 complejidad: S
 estado: lista
+openspec_change: autenticacion-identidad-linkedin-oauth2
 ---
 
 # Provisión automática de cuenta en primer acceso

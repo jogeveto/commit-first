@@ -24,13 +24,13 @@
     ],
     "openspec_change": "autenticacion-identidad-linkedin-oauth2",
     "branch": "feature/ep-001-autenticacion-linkedin-oauth2",
-    "phase": "change",
+    "phase": "red",
     "layer": "foundational",
     "gates": {
       "dor": true,
       "tdd": false,
       "journey_smoke": false,
-      "coherence_link": false,
+      "coherence_link": true,
       "data": false,
       "fidelity": false,
       "api": false,
@@ -146,10 +146,20 @@
         "at": "2026-07-31T00:00:00Z",
         "by": "dor-dod-gatekeeper",
         "note": "DoR PASA. Gate de tamaño activado (≥3 capas) → 3 sub-slices. Mock-first para LinkedIn (sin credenciales reales aún)."
+      },
+      {
+        "at": "2026-07-31T00:00:00Z",
+        "by": "opsx:new (fase change)",
+        "note": "OpenSpec change 'autenticacion-identidad-linkedin-oauth2' 4/4 artefactos (proposal+specs+design+tasks), openspec validate OK. Trazabilidad→EP-001/HU-001..003. Rama feature creada; main en jogeveto/commit-first."
+      },
+      {
+        "at": "2026-07-31T00:00:00Z",
+        "by": "change-epic-coherence",
+        "note": "coherence_link APROBADO. Back-references épica/HU→change añadidas. Siguiente: TDD SS-001-a (red)."
       }
     ],
     "updated_at": "2026-07-31T00:00:00Z",
-    "updated_by": "build:slice (dor→change)"
+    "updated_by": "build:slice (coherence_link cerrado; fase=red)"
   },
   "history": [],
   "releases": []
