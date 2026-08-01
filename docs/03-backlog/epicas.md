@@ -32,11 +32,13 @@
 - Cap 1.1 — Login exclusivo vía LinkedIn OAuth2.
 - Cap 1.2 — Emisión de sesión/JWT ligada al `User_ID`.
 - Cap 1.3 — Provisión automática de cuenta en primer login.
+- Cap 1.4 — Cierre de sesión (contraparte de 1.2: el equipo se comparte entre personas).
 
 **Historias previstas**:
 - HU-001 — Iniciar sesión con LinkedIn (OAuth2).
 - HU-002 — Provisión automática de cuenta en primer acceso.
 - HU-003 — Emisión y validación de sesión ligada al User_ID.
+- HU-021 — Cerrar sesión. *(Añadida durante la construcción: la auditoría de coherencia detectó que el prototipo aprobado incluye el botón "Salir" sin ninguna HU que lo respaldara.)*
 
 **Métrica de éxito de la épica**: 100% de los accesos ocurren vía LinkedIn OAuth2; 0 contraseñas almacenadas; toda petición autenticada porta un `User_ID` verificable (KPI O5).
 

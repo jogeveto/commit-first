@@ -31,7 +31,7 @@ No hay cambios BREAKING (es la primera capacidad del sistema).
 ## Trazabilidad
 
 - **Épica**: `EP-001` — Autenticación e Identidad (LinkedIn OAuth2) · `layer: foundational`
-- **HU cubiertas**: `HU-001` (login OAuth2), `HU-002` (provisión automática de cuenta), `HU-003` (sesión ligada al User_ID)
+- **HU cubiertas**: `HU-001` (login OAuth2), `HU-002` (provisión automática de cuenta), `HU-003` (sesión ligada al User_ID), `HU-021` (cerrar sesión)
 - **Objetivo del PRD**: `O5` — 100% de altas sin formulario manual (y habilita `O3` aislamiento al emitir el `User_ID`).
 - **Sub-slices** (gate de tamaño, ≥3 capas): `EP-001-a` backend OAuth2 + provisión · `EP-001-b` middleware de sesión + endpoints protegidos · `EP-001-c` login React + cableado end-to-end.
 - **Flow de referencia**: `docs/06-flows/EP-001-autenticacion-identidad.md`.

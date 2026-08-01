@@ -44,3 +44,18 @@ El sistema SHALL emitir una sesión/JWT firmada server-side que porta el `User_I
 #### Scenario: Token expirado retorna 401
 - **WHEN** un cliente llama a un endpoint protegido con un token cuya expiración ya venció
 - **THEN** el sistema responde 401 con indicación de re-autenticar y NO expone datos
+
+### Requirement: Cierre de sesión
+El sistema SHALL permitir al usuario cerrar su sesión, descartándola del navegador y devolviéndolo a la pantalla de login. Tras cerrar sesión, el área autenticada MUST quedar inaccesible sin volver a autenticarse. La sesión MUST NOT sobrevivir al cierre de la pestaña del navegador. Trazabilidad: HU-021.
+
+#### Scenario: Cerrar sesión devuelve al login
+- **WHEN** un usuario con sesión activa elige la opción de salir
+- **THEN** su sesión se descarta del navegador y vuelve a la pantalla de login
+
+#### Scenario: Tras salir no se puede volver al área autenticada
+- **WHEN** un usuario que acaba de cerrar sesión intenta abrir directamente una ruta del área autenticada
+- **THEN** el sistema lo devuelve al login y NO muestra ningún dato de su cuenta
+
+#### Scenario: La sesión no sobrevive al cierre de la pestaña
+- **WHEN** el usuario cierra la pestaña del navegador y vuelve a abrir la aplicación
+- **THEN** no hay sesión activa y se le pide entrar de nuevo

@@ -1,0 +1,264 @@
+﻿{
+    "summary":  {
+                    "total_assertions":  38,
+                    "skipped":  0,
+                    "total_requests":  22,
+                    "failed":  0,
+                    "passed":  38
+                },
+    "verdict":  "APROBADO",
+    "gate":  {
+                 "api":  "true (propuesto)"
+             },
+    "info":  {
+                 "baseUrl":  "http://localhost:8080",
+                 "runner":  "curl (Newman not installed globally; npx newman available on-demand)",
+                 "timestamp":  "2026-08-01T15:19:55.4113075-05:00",
+                 "mode":  "mock (FakeLinkedInClient - no real LinkedIn credentials)"
+             },
+    "results":  [
+                    {
+                        "assertions":  [
+                                           "status=200",
+                                           "CT=application/json",
+                                           "body.status=ok",
+                                           "body.service present"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  200,
+                        "name":  "GET /health happy",
+                        "id":  "T01"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=200",
+                                           "CT=application/json",
+                                           "body.message present",
+                                           "body.ts present"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  200,
+                        "name":  "GET /api/ping happy",
+                        "id":  "T02"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=302",
+                                           "Location header present",
+                                           "Location contains state=",
+                                           "Location contains code=mock-auth-code",
+                                           "Location points to callback"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  302,
+                        "name":  "GET /auth/linkedin/start happy 302",
+                        "id":  "T03"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=200",
+                                           "outcome=success",
+                                           "userId is UUID",
+                                           "token is 3-part JWT",
+                                           "no secrets in body",
+                                           "CT=application/json"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  200,
+                        "name":  "GET /auth/linkedin/callback?format=json happy success",
+                        "id":  "T04"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=200",
+                                           "CT=application/json",
+                                           "userId is UUID in body"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  200,
+                        "name":  "GET /api/me with valid JWT happy",
+                        "id":  "T05"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=401",
+                                           "WWW-Authenticate: Bearer present",
+                                           "empty body"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  401,
+                        "name":  "GET /api/me no token error 401",
+                        "id":  "T06"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=401",
+                                           "WWW-Authenticate: Bearer error=invalid_token",
+                                           "empty body"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  401,
+                        "name":  "GET /api/me invalid/manipulated token error 401",
+                        "id":  "T07"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=401",
+                                           "outcome=invalid_state",
+                                           "message user-friendly",
+                                           "no token in body"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  401,
+                        "name":  "GET /auth/linkedin/callback invalid state CSRF error 401",
+                        "id":  "T08"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=401",
+                                           "outcome=invalid_state"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  401,
+                        "name":  "GET /auth/linkedin/callback missing state edge 401",
+                        "id":  "T09"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=401",
+                                           "outcome=consent_rejected",
+                                           "message user-friendly",
+                                           "no token in body"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  401,
+                        "name":  "GET /auth/linkedin/callback consent rejected error 401",
+                        "id":  "T10"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=302",
+                                           "Location contains #token= fragment",
+                                           "Location contains /auth/callback",
+                                           "token NOT in query string"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  302,
+                        "name":  "GET /auth/linkedin/callback success redirect 302",
+                        "id":  "T11"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=302",
+                                           "Location contains /login",
+                                           "Location contains error=invalid_state",
+                                           "Location contains message="
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  302,
+                        "name":  "GET /auth/linkedin/callback error redirect 302 invalid state",
+                        "id":  "T12"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=302",
+                                           "Location contains /login",
+                                           "Location contains error=consent_rejected",
+                                           "Location contains message="
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  302,
+                        "name":  "GET /auth/linkedin/callback error redirect 302 consent rejected",
+                        "id":  "T13"
+                    },
+                    {
+                        "assertions":  [
+                                           "first use returns outcome=success",
+                                           "second use with same state returns outcome=invalid_state (replay blocked)"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  "200 then 401",
+                        "name":  "State single-use replay protection edge",
+                        "id":  "T14"
+                    },
+                    {
+                        "assertions":  [
+                                           "first auth userId=dbdde15e-...",
+                                           "second auth same code yields same userId=dbdde15e-..."
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  200,
+                        "name":  "HU-002 AC3 idempotence same code same userId",
+                        "id":  "T15"
+                    },
+                    {
+                        "assertions":  [
+                                           "sub=UUID",
+                                           "iss=empleabilidad",
+                                           "exp-nbf=28800s (8h)"
+                                       ],
+                        "status":  "PASS",
+                        "name":  "JWT payload structure valid",
+                        "id":  "T16"
+                    },
+                    {
+                        "assertions":  [
+                                           "userId in callback response matches userId in /api/me response"
+                                       ],
+                        "status":  "PASS",
+                        "name":  "userId consistency callback vs /api/me",
+                        "id":  "T17"
+                    },
+                    {
+                        "assertions":  [
+                                           "status=401",
+                                           "outcome=consent_rejected (no code = incomplete consent)"
+                                       ],
+                        "status":  "PASS",
+                        "http_status":  401,
+                        "name":  "Callback missing code edge 401",
+                        "id":  "T18"
+                    },
+                    {
+                        "assertions":  [
+                                           "401 no-token body empty",
+                                           "invalid_state message has no stack trace/PII",
+                                           "consent_rejected message has no stack trace/PII"
+                                       ],
+                        "status":  "PASS",
+                        "name":  "No PII in error responses",
+                        "id":  "T19"
+                    },
+                    {
+                        "assertions":  [
+                                           "has code=mock-auth-code",
+                                           "has state=",
+                                           "redirects to callback URL"
+                                       ],
+                        "status":  "PASS",
+                        "name":  "/auth/linkedin/start Location header structure",
+                        "id":  "T20"
+                    },
+                    {
+                        "assertions":  [
+                                           "/health=application/json",
+                                           "/api/ping=application/json",
+                                           "callback?format=json=application/json",
+                                           "/api/me=application/json"
+                                       ],
+                        "status":  "PASS",
+                        "name":  "Content-Type headers on all JSON endpoints",
+                        "id":  "T21"
+                    },
+                    {
+                        "assertions":  [
+                                           "exp-nbf=28800",
+                                           "iss=empleabilidad",
+                                           "sub present"
+                                       ],
+                        "status":  "PASS",
+                        "name":  "JWT expiration exactly 8h (ClockSkew=Zero)",
+                        "id":  "T22"
+                    }
+                ]
+}
