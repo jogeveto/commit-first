@@ -122,13 +122,16 @@ public class LinkedInAuthenticationServiceTests
             e => e.Message.Contains("valor-controlado-por-el-emisor"));
     }
 
-    // HU-002 AC2 — Fallo al persistir → sin sesión, SIN CUENTA PARCIAL y con mensaje.
+    // HU-002 AC2 (reacción de la orquestación) — si la persistencia falla: no se
+    // emite sesión y hay un mensaje para el usuario.
+    // La otra mitad del AC —"sin cuenta parcial creada"— NO se comprueba aquí: con
+    // un doble sería un assert vacuo. Se verifica contra PostgreSQL real en
+    // PostgresUserRepositoryTests.Fallo_al_persistir_no_deja_cuenta_en_la_base_de_datos.
     [Fact]
-    public async Task Fallo_de_persistencia_no_emite_sesion_ni_cuenta_parcial()
+    public async Task Fallo_de_persistencia_no_emite_sesion()
     {
         var store = new InMemoryAuthStateStore();
-        var repo = new FailingUserRepository();
-        var (svc, _, _) = BuildService(store, repo);
+        var (svc, _, _) = BuildService(store, new FailingUserRepository());
         var state = store.Issue();
 
         var result = await svc.HandleCallbackAsync(state, code: "auth-code-ok", error: null);
@@ -137,9 +140,6 @@ public class LinkedInAuthenticationServiceTests
         Assert.False(result.SessionEmitted);
         Assert.Null(result.Token);
         Assert.Null(result.UserId);
-        // "sin cuenta parcial creada" — la parte del AC que antes no se comprobaba
-        Assert.Equal(0, repo.Count);
-        // "veo un mensaje de que no se pudo completar el alta"
         Assert.False(string.IsNullOrWhiteSpace(result.Message));
     }
 }

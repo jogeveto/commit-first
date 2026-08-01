@@ -2,25 +2,19 @@ using Empleabilidad.Api.Auth;
 
 namespace Backend.Tests;
 
-/// Repositorio que simula un fallo de persistencia en el alta (HU-002 AC2).
-/// FindByLinkedinSubAsync no encuentra cuenta (primer acceso) y CreateAsync falla
-/// al escribir, como lo haría un error de base de datos durante el alta.
+/// Repositorio cuya escritura falla, para probar cómo REACCIONA la orquestación
+/// (HU-002 AC2): no emite sesión y devuelve ProvisioningFailed.
 ///
-/// `Count` cuenta el almacén REAL de este doble (no un valor fijo), para que el
-/// assert de "sin cuenta parcial creada" tenga contenido: si alguien cambiara el
-/// orden y la fila se guardara antes de fallar, el contador lo delataría.
+/// Deliberadamente NO expone un contador de cuentas. Un `Count` sobre este doble
+/// sería un assert vacuo: quien decide si la fila se escribe es el propio doble,
+/// no el código bajo prueba, así que daría 0 con cualquier comportamiento. La parte
+/// del AC que dice "sin cuenta parcial creada" se verifica contra PostgreSQL real
+/// en PostgresUserRepositoryTests.Fallo_al_persistir_no_deja_cuenta_en_la_base_de_datos.
 public class FailingUserRepository : IUserRepository
 {
-    private readonly Dictionary<string, Guid> _almacen = new();
-
-    public int Count => _almacen.Count;
-
     public Task<Guid?> FindByLinkedinSubAsync(string linkedinSub)
-        => Task.FromResult(_almacen.TryGetValue(linkedinSub, out var id) ? id : (Guid?)null);
+        => Task.FromResult<Guid?>(null);
 
     public Task<Guid> CreateAsync(string linkedinSub, string? name)
-    {
-        // La escritura falla ANTES de confirmarse: el almacén no se toca.
-        throw new InvalidOperationException("fallo de persistencia simulado");
-    }
+        => throw new InvalidOperationException("fallo de persistencia simulado");
 }

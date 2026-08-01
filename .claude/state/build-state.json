@@ -98,11 +98,18 @@
         "evidence": "xUnit en contenedor SDK: AccountProvisioningServiceTests 2/2 passed (dotnet test)"
       },
       {
+        "id": "WC-006",
+        "kind": "integration_point",
+        "ref": "secretos server-side: client secret y clave de firma JWT nunca llegan al cliente",
+        "status": "passing",
+        "evidence": "Verificado por ejecución: sin coincidencias de secretos en frontend/src ni en index.html/vite.config.ts; la única variable expuesta al bundle es VITE_API_URL (una URL). El contenedor del frontend solo tiene VITE_API_URL en su entorno. El `state` CSRF y el intercambio del code ocurren server-side."
+      },
+      {
         "id": "HU-002-AC2",
         "kind": "hu_ac",
         "ref": "HU-002#error-fallo-persistir-cuenta",
         "status": "passing",
-        "evidence": "Unit (LinkedInAuthenticationServiceTests.Fallo_de_persistencia_no_emite_sesion_ni_cuenta_parcial): FailingUserRepository falla al escribir → ProvisioningFailed, sin sesión, token y userId null, `repo.Count==0` (SIN CUENTA PARCIAL — assert añadido tras la auditoría; antes el test no lo comprobaba pese a prometerlo en su nombre) y mensaje presente. El endpoint mapea a 503. NOTA: no hay transacción explícita; la atomicidad la da que el alta es un único statement (INSERT ON CONFLICT; SELECT)."
+        "evidence": "Dos niveles. (1) Reacción de la orquestación — LinkedInAuthenticationServiceTests.Fallo_de_persistencia_no_emite_sesion: ProvisioningFailed, sin sesión, token y userId null, mensaje presente; el endpoint mapea a 503. (2) 'Sin cuenta parcial' CONTRA POSTGRES REAL — PostgresUserRepositoryTests.Fallo_al_persistir_no_deja_cuenta_en_la_base_de_datos: se provoca el fallo y una conexión sana e independiente comprueba count(*)=0 para esa identidad. La segunda auditoría demostró que el assert previo con doble era VACUO (el doble decidía el resultado, no el código); se eliminó el contador del doble y la invariante se verifica ahora donde manda la BD. NOTA: no hay transacción explícita; la atomicidad la da que el alta es un único statement (INSERT ON CONFLICT; SELECT), ahora ejercitado también en concurrencia real."
       },
       {
         "id": "HU-002-AC3",
@@ -168,11 +175,18 @@
         "evidence": "PostgresUserRepository (Npgsql) contra Postgres real en docker compose. Verificación REPETIBLE en tests/smoke/ep-001-api-contract.sh: tras dos logins con el mismo sub, `select count(*) from users where linkedin_sub='linkedin-sub-contract-happy'` devuelve 1 (el script consulta la BD con psql; antes esto se afirmaba con una comprobación manual de una sola vez)."
       },
       {
-        "id": "INT-api-linkedin",
+        "id": "INT-api-linkedin-mock",
         "kind": "integration_point",
-        "ref": "dotnet-api→ILinkedInClient (mock-first; real con credenciales)",
+        "ref": "dotnet-api→ILinkedInClient con FakeLinkedInClient (frontera mock)",
         "status": "passing",
-        "evidence": "Mock-first VERIFICADO: FakeLinkedInClient ejercitado en el callback durante el smoke (perfil determinista → provisión). RealLinkedInClient implementado (token+userinfo OIDC) y seleccionado por config; ruta con credenciales reales PENDIENTE de verificación (WC-002, sin cambio de contrato)."
+        "evidence": "FakeLinkedInClient ejercitado en el callback durante el smoke y el contrato (perfil determinista → provisión → sesión). Cubre el COMPORTAMIENTO DEL SISTEMA, no la integración con el proveedor real."
+      },
+      {
+        "id": "WC-002",
+        "kind": "integration_point",
+        "ref": "dotnet-api→LinkedIn real (RealLinkedInClient: accessToken + /v2/userinfo OIDC)",
+        "status": "failing",
+        "evidence": "NO VERIFICADO. RealLinkedInClient está implementado y se selecciona por configuración (LINKEDIN_CLIENT_ID/SECRET), pero ninguna prueba lo ejercita: sin credenciales no hay forma de ejecutarlo. Este item NO debe presentarse como verificado en el Release Gate. Bloqueo actual: crear la app requiere una página de empresa en LinkedIn; la creación de página está restringida en la cuenta usada ('no tienes suficientes contactos'). Se cierra ejecutando el flujo real de punta a punta cuando existan credenciales en .env."
       }
     ],
     "progress_log": [

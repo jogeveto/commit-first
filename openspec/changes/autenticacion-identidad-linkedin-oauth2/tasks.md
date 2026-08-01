@@ -38,7 +38,7 @@
 
 ## Cierre del slice
 
-- [x] 4.1 Stack-guard: toda dependencia nueva está en `stack-allowlist.json` con justificación. — bloque `allow_dotnet`: Npgsql 8.0.5, System.IdentityModel.Tokens.Jwt 8.1.2, JwtBearer 8.0.11, Mvc.Testing 8.0.11 (solo tests). Sin dependencias nuevas en el frontend.
+- [x] 4.1 Stack-guard: toda dependencia nueva está en `stack-allowlist.json` con justificación. — **Backend** (`allow_dotnet`): Npgsql 8.0.5, System.IdentityModel.Tokens.Jwt 8.1.2, JwtBearer 8.0.11, Mvc.Testing 8.0.11 (solo tests). **Frontend** (`allow`): `@types/react` y `@types/react-dom` (faltaban en el scaffold y `npm run build` fallaba el typecheck), y `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/jest-dom` (solo desarrollo; sin ellas no había forma de cubrir el bug de idempotencia del callback).
 - [x] 4.2 Secreto: verificar que el client secret / JWT key nunca llegan al bundle del frontend (WC-006). — verificado por ejecución: sin coincidencias de secretos en `frontend/src`; la única variable expuesta al cliente es `VITE_API_URL` (una URL). El flujo mantiene el `state` y el secret server-side.
 - [ ] 4.3 wiring_verified: verificación adversarial independiente (contexto virgen) de los 12 items del `wiring_checklist`. — EN CURSO
 - [ ] 4.4 DoD (reducido, inner loop) verde → PR a `main` + archivar el change en el mismo PR.
@@ -67,5 +67,5 @@ Corregido; `tsc -b` y `npm run build` salen con código 0.
 
 ## Gates de verificación (fase 5)
 
-- [x] `api` — 22 requests / 38 aserciones sin desviaciones (agente) + `tests/smoke/ep-001-api-contract.sh` 19/19 repetible, sin dependencias nuevas.
+- [x] `api` — 22 requests / 38 aserciones sin desviaciones (agente) + `tests/smoke/ep-001-api-contract.sh` **26/26** repetible, sin dependencias nuevas.
 - [x] `data` — invariantes verificadas con SQL real; idempotencia cubre la carrera check-then-act vía `ON CONFLICT`. Desviación D1 (guard de `sub` vacío) **corregida** en `LinkedInProfile` con TDD.
