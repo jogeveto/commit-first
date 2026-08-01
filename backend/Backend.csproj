@@ -8,10 +8,17 @@
   </PropertyGroup>
 
   <!--
-    Scaffold del backend .NET Core (API + orquestación).
-    Las dependencias (EF Core, Npgsql, autenticación) se agregan por slice,
-    validadas contra .claude/config/stack-allowlist.json.
+    Dependencias agregadas por slice, justificadas contra el PRD §7 (stack) y el
+    design.md del change. EP-001-a:
+      · Npgsql — driver PostgreSQL (PRD §7 datos; design D3 provisión idempotente).
+      · System.IdentityModel.Tokens.Jwt — sesión JWT HS256 (design D4).
   -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="8.0.5" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.2" />
+    <!-- EP-001-b: middleware de validación JWT (HU-003, design D4). -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+  </ItemGroup>
 
   <!-- El proyecto de tests vive en tests/ y NO forma parte del ensamblado del API. -->
   <ItemGroup>
