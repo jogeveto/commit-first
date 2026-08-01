@@ -68,28 +68,63 @@ public class PostgresUserRepositoryTests
         Assert.Equal(1, await ContarAsync(sub));
     }
 
-    // HU-002 AC2 — "sin cuenta parcial creada", verificado CONTRA LA BASE DE DATOS.
-    // El fallo se provoca con una base inalcanzable; después se comprueba, con una
-    // conexión sana e independiente, que no quedó ninguna fila para esa identidad.
-    // A diferencia del test con doble, aquí quien responde es Postgres.
+    // HU-002 AC2 — "no se emite sesión y no queda cuenta parcial", con el fallo
+    // ocurriendo DENTRO de la misma base de datos y durante el alta real.
+    //
+    // Por qué así: una versión anterior de este test apuntaba el repositorio a otra
+    // base de datos. Pasaba siempre —incluso con una implementación que insertara la
+    // fila y luego fallara— porque el código nunca tocaba la base donde se contaba.
+    // El fallo se inyecta ahora con un trigger en `users` que aborta el INSERT de
+    // esta identidad concreta: es un error real de Postgres en el camino real.
+    //
+    // Mutación que lo pone en rojo: que CreateAsync trague el error de la base y
+    // devuelva un Guid inventado (el flujo emitiría sesión para una cuenta que no
+    // existe). Verificado ejecutándola.
     [Fact]
-    public async Task Fallo_al_persistir_no_deja_cuenta_en_la_base_de_datos()
+    public async Task Fallo_durante_el_alta_no_emite_sesion_ni_deja_cuenta()
     {
         var sub = NuevoSub("fallo");
-        var repoRoto = new PostgresUserRepository(
-            "Host=db;Port=5432;Database=base_inexistente;Username=empleo;Password=empleo_dev;Timeout=3");
-        var svc = new LinkedInAuthenticationService(
-            new AlwaysValidStateStore(),
-            new FakeLinkedInClient(new LinkedInProfile(sub, "Ana Torres")),
-            new AccountProvisioningService(repoRoto),
-            new FakeJwtIssuer(),
-            NullLogger<LinkedInAuthenticationService>.Instance);
+        await EjecutarSqlAsync($@"
+            CREATE OR REPLACE FUNCTION fallo_alta_{Sufijo(sub)}() RETURNS trigger AS $$
+            BEGIN RAISE EXCEPTION 'fallo simulado durante el alta'; END;
+            $$ LANGUAGE plpgsql;
+            CREATE TRIGGER trg_fallo_{Sufijo(sub)} BEFORE INSERT ON users
+            FOR EACH ROW WHEN (NEW.linkedin_sub = '{sub}')
+            EXECUTE FUNCTION fallo_alta_{Sufijo(sub)}();");
 
-        var result = await svc.HandleCallbackAsync("state-ok", "code-ok", null);
+        try
+        {
+            var svc = new LinkedInAuthenticationService(
+                new AlwaysValidStateStore(),
+                new FakeLinkedInClient(new LinkedInProfile(sub, "Ana Torres")),
+                new AccountProvisioningService(new PostgresUserRepository(Conn)),
+                new FakeJwtIssuer(),
+                NullLogger<LinkedInAuthenticationService>.Instance);
 
-        Assert.Equal(AuthOutcome.ProvisioningFailed, result.Outcome);
-        Assert.False(result.SessionEmitted);
-        Assert.Equal(0, await ContarAsync(sub)); // la BD real no tiene cuenta parcial
+            var result = await svc.HandleCallbackAsync("state-ok", "code-ok", null);
+
+            Assert.Equal(AuthOutcome.ProvisioningFailed, result.Outcome);
+            Assert.False(result.SessionEmitted);
+            Assert.Null(result.Token);
+            Assert.Equal(0, await ContarAsync(sub)); // sin cuenta parcial en la BD real
+        }
+        finally
+        {
+            await EjecutarSqlAsync(
+                $"DROP TRIGGER IF EXISTS trg_fallo_{Sufijo(sub)} ON users; " +
+                $"DROP FUNCTION IF EXISTS fallo_alta_{Sufijo(sub)}();");
+        }
+    }
+
+    // Identificador SQL seguro derivado del sub (solo alfanumérico).
+    private static string Sufijo(string sub) => sub.Replace("-", "")[^12..];
+
+    private static async Task EjecutarSqlAsync(string sql)
+    {
+        await using var conn = new NpgsqlConnection(Conn);
+        await conn.OpenAsync();
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        await cmd.ExecuteNonQueryAsync();
     }
 
     /// Store que acepta cualquier `state`: en estos tests lo que se ejercita es la

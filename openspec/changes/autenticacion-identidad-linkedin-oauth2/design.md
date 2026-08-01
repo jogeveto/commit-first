@@ -22,7 +22,7 @@ La selección es por configuración (DI), sin cambiar código de dominio. Trade-
 Al iniciar el flujo se genera un `state` aleatorio firmado/almacenado (cookie httpOnly o cache server-side con TTL). El callback exige coincidencia exacta; ausencia/mismatch → rechazo sin sesión (HU-001 AC3).
 
 ### D3 — Provisión idempotente
-`users.linkedin_sub UNIQUE` (ya en el esquema del scaffold). Alta en una transacción; `INSERT ... ON CONFLICT (linkedin_sub) DO NOTHING` + `SELECT` del `User_ID`, o patrón equivalente en EF Core. Fallo de persistencia → rollback, sin sesión, sin cuenta parcial (HU-002 AC2).
+`users.linkedin_sub UNIQUE` (ya en el esquema del scaffold). El alta es un **único statement** —`INSERT ... ON CONFLICT (linkedin_sub) DO NOTHING; SELECT` del `User_ID`—, así que su atomicidad la garantiza Postgres sin transacción explícita: un fallo durante el alta no deja cuenta parcial (HU-002 AC2, verificado con un trigger que aborta el INSERT). **Si un slice posterior añade más escrituras al alta, habrá que envolverla en una transacción explícita**, porque entonces la atomicidad dejaría de ser gratis.
 
 ### D4 — Sesión JWT + middleware
 JWT firmado con `JWT_SIGNING_KEY` (server-side), claim `sub = User_ID`, expiración configurable. Middleware valida firma + expiración e inyecta `User_ID` en el contexto; ausencia/inválido/expirado → 401 (HU-003). El `User_ID` del contexto será la clave de tenancy que consumirá EP-002.
@@ -32,7 +32,7 @@ Pantalla de login (botón "Continuar con LinkedIn") que redirige a `/auth/linked
 
 ## Risks / Trade-offs
 
-- **Sin credenciales reales**: el path real de LinkedIn no se ejercita aún (mitigado por la frontera + WC-002; no bloquea el DoD del comportamiento del sistema).
+- **Path real de LinkedIn**: RESUELTO. Se creó la app en LinkedIn y se verificó el flujo real de punta a punta (WC-002 cerrado); la frontera permitió el cambio sin tocar el dominio. El contrato automatizado sigue corriendo contra la frontera mock (el consentimiento real no se puede simular): `tests/smoke/ep-001-api-contract.sh` aborta si detecta credenciales reales, en vez de reportar verdes engañosos.
 - **Alcance de scopes de LinkedIn**: qué campos del perfil se obtienen depende del scope real (spike documentado en HU-007/EP-003; aquí solo se necesita `sub` + nombre).
 - **Dependencias nuevas** (auth handlers, Npgsql/EF): validar contra `stack-allowlist.json` (hook `stack-guard.sh`) al agregarlas.
 

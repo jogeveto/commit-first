@@ -14,6 +14,11 @@ set -uo pipefail
 BASE="${1:-http://localhost:8080}"
 PASS=0; FAIL=0
 
+# Identidad distinta por ejecución: sin esto, los checks contra la base de datos
+# pueden pasar sobre filas dejadas por corridas anteriores (verde falso).
+CORRIDA="$(date +%s)-$$"
+SUB_HAPPY="contract-happy-$CORRIDA"
+
 check() { # check <descripción> <esperado> <obtenido>
   if [ "$2" = "$3" ]; then
     PASS=$((PASS+1)); printf '  ✓ %s\n' "$1"
@@ -37,6 +42,23 @@ nuevo_state() {
 
 echo "== EP-001 · contrato de API ($BASE) =="
 
+# GUARDA DE MODO. El contrato ejercita el flujo OAuth2 con un `code` simulado, lo
+# cual solo es posible con FakeLinkedInClient. Si el backend corre con credenciales
+# reales, /auth/linkedin/start redirige a linkedin.com y estos checks no pueden
+# pasar: hay que ABORTAR con un mensaje claro en vez de reportar fallos (o, peor,
+# verdes engañosos). Para correrlo, levanta el backend en modo mock:
+#   LINKEDIN_CLIENT_ID= LINKEDIN_CLIENT_SECRET= docker compose up -d backend
+LOC_MODO=$(curl -si "$BASE/auth/linkedin/start" | grep -i '^location:' | tr -d '\r')
+case "$LOC_MODO" in
+  *linkedin.com*)
+    echo "ABORTADO: el backend corre con credenciales REALES de LinkedIn."
+    echo "  /auth/linkedin/start → linkedin.com (no se puede simular el consentimiento)."
+    echo "  Para el contrato, levanta el backend en modo mock:"
+    echo "    LINKEDIN_CLIENT_ID= LINKEDIN_CLIENT_SECRET= docker compose up -d backend"
+    exit 2 ;;
+  *) echo "(modo mock detectado — se puede simular el flujo OAuth2)" ;;
+esac
+
 echo "-- scaffold --"
 check "GET /health → 200" "200" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/health")"
 
@@ -47,7 +69,7 @@ contains "Location emite un state CSRF" "state=" "$LOC"
 
 echo "-- HU-001 AC1 / HU-002 AC1 · happy path --"
 S=$(nuevo_state)
-OK=$(curl -s "$BASE/auth/linkedin/callback?code=contract-happy&state=$S&format=json")
+OK=$(curl -s "$BASE/auth/linkedin/callback?code=$SUB_HAPPY&state=$S&format=json")
 contains "callback exitoso → outcome success" '"outcome":"success"' "$OK"
 contains "callback exitoso → emite token de sesión" '"token":"' "$OK"
 USER1=$(printf '%s' "$OK" | grep -oE '"userId":"[^"]+"' | cut -d'"' -f4)
@@ -56,19 +78,26 @@ USER1=$(printf '%s' "$OK" | grep -oE '"userId":"[^"]+"' | cut -d'"' -f4)
 
 echo "-- HU-002 AC3 · idempotencia (mismo sub no duplica) --"
 S=$(nuevo_state)
-USER2=$(curl -s "$BASE/auth/linkedin/callback?code=contract-happy&state=$S&format=json" \
+USER2=$(curl -s "$BASE/auth/linkedin/callback?code=$SUB_HAPPY&state=$S&format=json" \
   | grep -oE '"userId":"[^"]+"' | cut -d'"' -f4)
-check "acceso recurrente reutiliza el User_ID" "$USER1" "$USER2"
+# Comparar dos cadenas VACÍAS daría verde aunque ambos logins hubieran fallado
+# (verde falso detectado en auditoría): se exige que el User_ID exista.
+if [ -n "$USER1" ] && [ "$USER1" = "$USER2" ]; then
+  PASS=$((PASS+1)); echo "  ✓ acceso recurrente reutiliza el User_ID"
+else
+  FAIL=$((FAIL+1)); echo "  ✗ acceso recurrente reutiliza el User_ID (1º='$USER1' 2º='$USER2')"
+fi
 
-# La igualdad de User_ID es evidencia indirecta; esto comprueba la FILA REAL en la
-# base de datos, que es lo que el AC exige ("no crea una cuenta duplicada").
+# La igualdad de User_ID es evidencia indirecta; esto comprueba la FILA REAL creada
+# POR ESTA CORRIDA (el `sub` lleva un sufijo único: con uno fijo, el check pasaba
+# sobre una fila residual de ejecuciones anteriores aunque no ocurriera ningún login).
 if command -v docker >/dev/null 2>&1; then
   FILAS=$(docker exec "${DB_CONTAINER:-my-top-profile-db-1}" \
     psql -U "${DB_USER:-empleo}" -d "${DB_NAME:-empleabilidad}" -tAc \
-    "select count(*) from users where linkedin_sub='linkedin-sub-contract-happy'" 2>/dev/null | tr -d '[:space:]')
-  check "tras dos logins hay exactamente 1 fila en users" "1" "$FILAS"
+    "select count(*) from users where linkedin_sub='linkedin-sub-$SUB_HAPPY'" 2>/dev/null | tr -d '[:space:]')
+  check "tras dos logins hay exactamente 1 fila nueva en users" "1" "$FILAS"
 else
-  echo "  ~ omitido: docker no disponible (no se pudo verificar la fila en users)"
+  FAIL=$((FAIL+1)); echo "  ✗ docker no disponible: NO se pudo verificar la fila en users"
 fi
 
 echo "-- HU-001 AC3 · state inválido (CSRF) --"

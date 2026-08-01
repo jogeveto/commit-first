@@ -24,7 +24,8 @@
     "@types/react",
     "@types/react-dom",
     "vitest",
-    "jsdom"
+    "jsdom",
+    "@testing-library/react"
   ],
   "allow_dotnet": {
     "_comment": "Paquetes NuGet aprobados para el backend .NET. Mismo criterio que `allow`: derivados del PRD §7. Se registran por slice al agregarse.",
@@ -52,6 +53,7 @@
     "@types/react-dom": "Tipos de react-dom, por el mismo motivo. Solo desarrollo.",
     "vitest": "Runner de pruebas del SPA (EP-001): el bug de idempotencia del callback se corrigió sin regresión y no había forma de cubrirlo. Es el runner nativo de Vite, ya en el stack. Solo desarrollo.",
     "jsdom": "Entorno DOM para vitest: la lógica de sesión usa sessionStorage y el fragmento de la URL. Solo desarrollo.",
+    "@testing-library/react": "Tests de COMPONENTE (EP-001): sin ellos se podía desactivar el guard de rutas o dejar el botón de salir sin cablear con toda la suite en verde — verificado por mutación. Solo desarrollo.",
     "_deny_note": "Prohibidas las SDK de IA de pago: el PRD exige LLM local (O4, costo $0). deny_examples lista las más comunes a bloquear."
   }
 }

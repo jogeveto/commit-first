@@ -109,7 +109,7 @@
         "kind": "hu_ac",
         "ref": "HU-002#error-fallo-persistir-cuenta",
         "status": "passing",
-        "evidence": "Dos niveles. (1) Reacción de la orquestación — LinkedInAuthenticationServiceTests.Fallo_de_persistencia_no_emite_sesion: ProvisioningFailed, sin sesión, token y userId null, mensaje presente; el endpoint mapea a 503. (2) 'Sin cuenta parcial' CONTRA POSTGRES REAL — PostgresUserRepositoryTests.Fallo_al_persistir_no_deja_cuenta_en_la_base_de_datos: se provoca el fallo y una conexión sana e independiente comprueba count(*)=0 para esa identidad. La segunda auditoría demostró que el assert previo con doble era VACUO (el doble decidía el resultado, no el código); se eliminó el contador del doble y la invariante se verifica ahora donde manda la BD. NOTA: no hay transacción explícita; la atomicidad la da que el alta es un único statement (INSERT ON CONFLICT; SELECT), ahora ejercitado también en concurrencia real."
+        "evidence": "Dos niveles. (1) Reaccion de la orquestacion (LinkedInAuthenticationServiceTests.Fallo_de_persistencia_no_emite_sesion): ProvisioningFailed, sin sesion, token/userId null, mensaje presente; el endpoint mapea a 503. (2) 'Sin cuenta parcial' CONTRA POSTGRES REAL (PostgresUserRepositoryTests.Fallo_durante_el_alta_no_emite_sesion_ni_deja_cuenta): el fallo se inyecta con un TRIGGER que aborta el INSERT dentro de la MISMA base, y se comprueba count(*)=0. Historial: las dos versiones anteriores de este assert eran VACUAS (primero un contador sobre un doble; luego apuntar a otra base de datos) y las descubrieron auditorias independientes. MUTACION VERIFICADA: si CreateAsync traga el error de la base y devuelve un Guid inventado, el test se pone ROJO. NOTA: el alta es un unico statement, asi que su atomicidad la da Postgres; si un slice posterior anade escrituras al alta hara falta transaccion explicita."
       },
       {
         "id": "HU-002-AC3",
@@ -144,21 +144,21 @@
         "kind": "hu_ac",
         "ref": "HU-021#happy-cerrar-sesion-vuelve-al-login",
         "status": "passing",
-        "evidence": "vitest (session.test.ts 'cerrar sesión descarta el token') + journey de clic real: botón Salir en /perfil → sesión descartada y navegación a /login."
+        "evidence": "Test de COMPONENTE (App.test.tsx): se monta AppLayout en un router, se hace clic en el boton 'Salir' real y se asserta que la sesion queda descartada y que se renderiza la pantalla de login. MUTACIONES VERIFICADAS: quitar clearSession() del handler -> rojo; navegar a /perfil en vez de /login -> rojo. (Antes solo se llamaba a clearSession() desde el test, lo que dejaba pasar ambos defectos.)"
       },
       {
         "id": "HU-021-AC2",
         "kind": "hu_ac",
         "ref": "HU-021#error-volver-al-area-tras-salir",
         "status": "passing",
-        "evidence": "vitest ('tras cerrar sesión no se puede volver al área autenticada') + journey real: navegar a /perfil sin sesión redirige a /login sin mostrar datos. La autoridad real es el backend: /api/me responde 401 (verificado en el contrato)."
+        "evidence": "Test de COMPONENTE (RequireAuth.test.tsx): sin sesion no se renderiza el contenido privado y se llega al login; con sesion si pasa. MUTACION VERIFICADA: desactivar el guard con 'if (false)' -> rojo. La autoridad real sigue siendo el backend: /api/me responde 401 (verificado en el contrato)."
       },
       {
         "id": "HU-021-AC3",
         "kind": "hu_ac",
         "ref": "HU-021#edge-sesion-no-sobrevive-al-cierre-de-pestana",
         "status": "passing",
-        "evidence": "vitest ('la sesión se guarda en sessionStorage, no en localStorage'): se cumple por construcción y el test fija la decisión para que un cambio a localStorage no pase inadvertido."
+        "evidence": "vitest (session.test.ts): la sesion se guarda en sessionStorage y no en localStorage, de modo que no sobrevive al cierre de la pestana. MUTACION VERIFICADA: cambiar a localStorage -> rojo."
       },
       {
         "id": "INT-spa-api",
@@ -172,14 +172,14 @@
         "kind": "integration_point",
         "ref": "dotnet-api→postgres (provisión users por User_ID)",
         "status": "passing",
-        "evidence": "PostgresUserRepository (Npgsql) contra Postgres real en docker compose. Verificación REPETIBLE en tests/smoke/ep-001-api-contract.sh: tras dos logins con el mismo sub, `select count(*) from users where linkedin_sub='linkedin-sub-contract-happy'` devuelve 1 (el script consulta la BD con psql; antes esto se afirmaba con una comprobación manual de una sola vez)."
+        "evidence": "PostgresUserRepository (Npgsql) contra Postgres real. (1) tests/smoke/ep-001-api-contract.sh: tras dos logins, count(*)=1 para un linkedin_sub UNICO POR CORRIDA (con un sub fijo el check pasaba sobre una fila residual: verde falso corregido). (2) PostgresUserRepositoryTests: alta cuyo User_ID coincide con la fila real, y altas CONCURRENTES del mismo sub que dejan una sola fila (ejercita el ON CONFLICT de verdad)."
       },
       {
         "id": "INT-api-linkedin-mock",
         "kind": "integration_point",
         "ref": "dotnet-api→ILinkedInClient con FakeLinkedInClient (frontera mock)",
         "status": "passing",
-        "evidence": "FakeLinkedInClient ejercitado en el callback durante el smoke y el contrato (perfil determinista → provisión → sesión). Cubre el COMPORTAMIENTO DEL SISTEMA, no la integración con el proveedor real."
+        "evidence": "FakeLinkedInClient ejercitado en el contrato (26/26, exit 0) con el backend en MODO MOCK. El script detecta el modo: si el backend corre con credenciales reales, ABORTA con exit 2 y un mensaje explicito en vez de reportar verdes enganosos. Para correrlo: LINKEDIN_CLIENT_ID= LINKEDIN_CLIENT_SECRET= docker compose up -d backend."
       },
       {
         "id": "WC-002",
@@ -254,10 +254,15 @@
         "at": "2026-08-01T00:00:00Z",
         "by": "correcciones 2a auditoria + verificacion real de LinkedIn",
         "note": "2a auditoria (INCOHERENTE) resuelta. Lo mas grave: (a) NADA estaba commiteado -> 5 commits, working tree limpio. (b) El arreglo previo de HU-002 AC2 era un ASSERT VACUO: en un doble, el propio doble decide si escribe, asi que Count==0 pasaba con cualquier comportamiento -> sustituido por PostgresUserRepositoryTests contra Postgres REAL (alta cuyo User_ID coincide con la fila; altas CONCURRENTES que dejan 1 sola fila; 'sin cuenta parcial' comprobado con conexion independiente. Evidencia en BD: 0 filas del caso de fallo, 1 por corrida en el de carrera). (c) La regresion del bug de idempotencia cubria la funcion pura y no el componente -> AuthCallback.test.tsx bajo StrictMode, VERIFICADO POR MUTACION (al revertir el fix, el test falla). (d) HU-003 AC3 'indicacion de re-autenticar' no se assertaba -> añadido (WWW-Authenticate invalid_token/expired). (e) Healthcheck roto (wget ausente en la imagen runtime de .NET) -> curl; contenedor healthy con 0 fallos. (f) Textos falsos en tasks.md corregidos (dependencias del frontend; 19/19 -> 26/26). WC-002 CERRADO CON LINKEDIN REAL: pagina 'Afina Empleabilidad IA' + app 248590322 + producto OIDC creados desde el navegador; el flujo real provisiono la cuenta con el sub OIDC autentico (display_name real) y el segundo login no duplico. HU-021 (cerrar sesion) creada y trazada tras detectar que el prototipo aprobado la incluia sin historia. Verificacion final: backend 25/25, frontend 17/17, contrato 26/26, tsc/build exit 0."
+      },
+      {
+        "at": "2026-08-01T00:00:00Z",
+        "by": "correcciones 3a auditoria (B1-B5)",
+        "note": "3a auditoria: INCOHERENTE. Confirmo que el patron se repetia: cada correccion reintroducia el mismo defecto un nivel mas adentro (doble -> otra base de datos; funcion pura -> otro modulo puro; test unitario -> script de contrato). Adoptado su criterio: para cada assert nuevo, escribir que mutacion de produccion lo pone en rojo y EJECUTARLA. B1 (assert vacuo, 3a encarnacion): el fallo se inyectaba contra OTRA base, asi que pasaba incluso con cuenta parcial real -> ahora un trigger aborta el INSERT en la MISMA base; mutacion 'tragar el error y devolver Guid inventado' verificada ROJA. B2 (HU-021 probaba el modulo puro, no los controles): anadidos App.test.tsx y RequireAuth.test.tsx; las tres mutaciones del auditor (quitar clearSession, navegar a /perfil, desactivar el guard) verificadas ROJAS. B3 (contrato en rojo tras activar credenciales reales, con DOS VERDES FALSOS): guarda de modo que aborta con exit 2; comparacion de User_ID que exige valor no vacio; sub unico por corrida. Mutacion con backend caido: ambos checks ROJOS (antes verdes). B4: requisito 'Cierre de sesion' no tenia tasks -> anadidas 5.1-5.4; @testing-library/react registrado en el allowlist y jest-dom RETIRADO por huerfano. B5: corregida la deriva doc-realidad en tasks.md (Count real, 12 items, hueco de discovery) y design.md (D3 hablaba de transaccion/rollback inexistentes; riesgo de LinkedIn obsoleto). Verificacion: backend 25/25, frontend 21/21, contrato 26/26 exit 0 en modo mock (aborta en modo real), tsc exit 0."
       }
     ],
     "updated_at": "2026-08-01T00:00:00Z",
-    "updated_by": "WC-002 verificado con LinkedIn real"
+    "updated_by": "correcciones 3a auditoria; mutaciones verificadas"
   },
   "history": [],
   "releases": []
