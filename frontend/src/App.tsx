@@ -1,25 +1,26 @@
-import { Link, Outlet } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { api } from './api/client'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { clearSession } from './auth/session'
 
-// Layout base del scaffold: navegación por el sitemap + verificación de wiring con la API.
+// Layout del área autenticada. Solo se renderiza tras el guard de sesión
+// (RequireAuth); el login es una pantalla completa fuera de este layout.
+// La navegación definitiva (rail del prototipo) llega con el design-system.
 export function AppLayout() {
-  const [apiStatus, setApiStatus] = useState<string>('comprobando…')
+  const navigate = useNavigate()
 
-  useEffect(() => {
-    api.get('/health')
-      .then((r) => setApiStatus(`API: ${r.data.status}`))
-      .catch(() => setApiStatus('API: sin conexión'))
-  }, [])
+  const salir = () => {
+    clearSession()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="app">
       <header>
         <h1>Asistente de Empleabilidad IA</h1>
-        <small>{apiStatus}</small>
+        <button className="btn-logout" onClick={salir}>
+          Salir
+        </button>
       </header>
       <nav>
-        <Link to="/login">Login</Link>
         <Link to="/perfil">Perfil</Link>
         <Link to="/vacantes">Vacantes</Link>
         <Link to="/vacante/demo">Generar CV</Link>

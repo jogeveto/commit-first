@@ -1,42 +1,115 @@
+/* Tokens de diseño — copiados del prototipo clickeable (DESIGN_SOURCE:
+   docs/07-prototipo/index.html) para que la app sea fiel a la fuente de verdad
+   visual. Al construir el design-system de EP-00X estos tokens se extraen a su
+   propio módulo; hoy viven aquí porque EP-001 es el primer slice con UI. */
 :root {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  color: #1a1a2e;
-  background: #f5f6fa;
+  --paper: #F6F2E9; --paper-2: #FCFAF4; --card: #FFFFFF;
+  --ink: #191712; --ink-soft: #3C382F; --muted: #7A7263; --faint: #A79E8C;
+  --line: #E4DDCC; --line-strong: #D3C9B2;
+  --pine: #1B4D3E; --pine-bright: #2F6B54;
+  --green: #2E7D32; --green-soft: #E4F0E2;
+  --amber: #C77A0A; --amber-soft: #F6E9D2;
+  --red: #C0392B; --red-soft: #F4DED9;
+  --blue: #0A66C2; --blue-soft: #E3EEF9;
+  --shadow: 0 1px 2px rgba(25,23,18,.04), 0 8px 24px rgba(25,23,18,.06);
+  --r: 14px;
+
+  font-family: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+h1, h2, h3 {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  line-height: 1.08;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 
+/* ---------- HU-001 · Pantalla de login (fiel a #login del prototipo) ---------- */
+#login {
+  position: fixed; inset: 0;
+  display: grid; grid-template-columns: 1.05fr .95fr;
+  background: var(--paper); z-index: 50;
+}
+#login .brand-side {
+  position: relative; overflow: hidden;
+  background: radial-gradient(120% 90% at 15% 12%, #24614C 0%, #1B4D3E 42%, #143b30 100%);
+  color: #F3EFE4; padding: 56px 60px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+#login .brand-side::before {
+  content: ""; position: absolute; inset: 0; opacity: .12;
+  background-image: radial-gradient(circle at 1px 1px, #fff 1px, transparent 0);
+  background-size: 22px 22px;
+}
+.brand-mark { display: flex; align-items: center; gap: 12px; position: relative; z-index: 2; }
+.brand-mark .dot {
+  width: 34px; height: 34px; border-radius: 9px; background: #EBD9A8;
+  display: grid; place-items: center; color: #1B4D3E;
+  font-family: "Fraunces", Georgia, serif; font-weight: 700; font-size: 20px;
+}
+.brand-mark b { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 17px; letter-spacing: .02em; }
+.brand-hero { position: relative; z-index: 2; }
+.brand-hero .eyebrow { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #C9E3D5; margin-bottom: 22px; }
+.brand-hero h1 { font-size: clamp(34px, 3.4vw, 52px); color: #FCFAF2; font-weight: 500; }
+.brand-hero h1 em { font-style: italic; color: #EBD9A8; }
+.brand-hero p { margin-top: 20px; max-width: 34ch; color: #CFE0D6; font-size: 16px; line-height: 1.55; }
+.brand-foot { position: relative; z-index: 2; display: flex; gap: 26px; font-size: 12.5px; color: #AFC7BA; }
+.brand-foot span { display: flex; align-items: center; gap: 7px; }
+.brand-foot .ic { width: 15px; height: 15px; border: 1.5px solid #7FA794; border-radius: 4px; display: inline-block; }
+
+#login .form-side { display: flex; align-items: center; justify-content: center; padding: 40px; }
+.login-card { width: 100%; max-width: 380px; }
+.login-card .kicker { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.login-card h2 { font-size: 30px; margin-bottom: 10px; }
+.login-card > p { color: var(--muted); margin-bottom: 32px; }
+.btn-linkedin {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: var(--blue); color: #fff; padding: 15px; border-radius: 11px;
+  font-size: 15.5px; font-weight: 600;
+  transition: transform .15s, box-shadow .2s;
+  box-shadow: 0 6px 18px rgba(10,102,194,.28);
+}
+.btn-linkedin:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(10,102,194,.36); }
+.btn-linkedin svg { width: 21px; height: 21px; }
+.login-note {
+  margin-top: 22px; padding: 14px 16px; background: var(--green-soft);
+  border-radius: 10px; font-size: 13px; color: #2b5c34;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.login-fine { margin-top: 26px; font-size: 12px; color: var(--faint); text-align: center; line-height: 1.6; }
+/* HU-001 AC2/AC3 · aviso de autenticación fallida, explicable y no técnico */
+.login-error {
+  margin-bottom: 20px; padding: 13px 15px; background: var(--red-soft);
+  border-radius: 10px; font-size: 13.5px; color: #8c2c20;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+  #login { grid-template-columns: 1fr; }
+  #login .brand-side { display: none; }
+}
+
+/* ---------- Área autenticada (scaffold; su UI real llega en EP-003+) ---------- */
 .app { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
-
-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 0.75rem;
-}
-header h1 { font-size: 1.35rem; margin: 0; }
-header small { color: #6b7280; }
-
-nav {
-  display: flex;
-  gap: 1rem;
-  margin: 1rem 0 1.5rem;
-  flex-wrap: wrap;
-}
-nav a {
-  text-decoration: none;
-  color: #2563eb;
-  font-weight: 500;
-}
+header { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--line); padding-bottom: .75rem; gap: 1rem; }
+header h1 { font-size: 1.35rem; }
+header small { color: var(--muted); }
+nav { display: flex; gap: 1rem; margin: 1rem 0 1.5rem; flex-wrap: wrap; align-items: center; }
+nav a { text-decoration: none; color: var(--pine); font-weight: 500; }
 nav a:hover { text-decoration: underline; }
-
-.placeholder {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 1.5rem;
-}
-.placeholder h2 { margin-top: 0; }
-.placeholder .hint { color: #6b7280; font-size: 0.9rem; }
+.btn-logout { color: var(--muted); font-size: .9rem; text-decoration: underline; }
+.placeholder { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 1.5rem; }
+.placeholder h2 { margin-bottom: .75rem; }
+.placeholder p { margin-bottom: .5rem; }
+.placeholder .hint { color: var(--muted); font-size: .9rem; }
+.auth-callback { display: grid; place-items: center; min-height: 100vh; color: var(--muted); }
