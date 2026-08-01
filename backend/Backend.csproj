@@ -9,9 +9,14 @@
 
   <!--
     Scaffold del backend .NET Core (API + orquestación).
-    Sin dependencias de negocio aún: solo el host web y health checks.
     Las dependencias (EF Core, Npgsql, autenticación) se agregan por slice,
     validadas contra .claude/config/stack-allowlist.json.
   -->
+
+  <!-- El proyecto de tests vive en tests/ y NO forma parte del ensamblado del API. -->
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <Content Remove="tests/**/*" />
+  </ItemGroup>
 
 </Project>

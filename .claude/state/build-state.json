@@ -24,7 +24,7 @@
     ],
     "openspec_change": "autenticacion-identidad-linkedin-oauth2",
     "branch": "feature/ep-001-autenticacion-linkedin-oauth2",
-    "phase": "red",
+    "phase": "green",
     "layer": "foundational",
     "gates": {
       "dor": true,
@@ -90,7 +90,8 @@
         "id": "HU-002-AC1",
         "kind": "hu_ac",
         "ref": "HU-002#happy-provision-primer-acceso",
-        "status": "failing"
+        "status": "passing",
+        "evidence": "xUnit en contenedor SDK: AccountProvisioningServiceTests 2/2 passed (dotnet test)"
       },
       {
         "id": "HU-002-AC2",
@@ -102,7 +103,8 @@
         "id": "HU-002-AC3",
         "kind": "hu_ac",
         "ref": "HU-002#edge-recurrente-no-duplica",
-        "status": "failing"
+        "status": "passing",
+        "evidence": "xUnit en contenedor SDK: AccountProvisioningServiceTests 2/2 passed (dotnet test)"
       },
       {
         "id": "HU-003-AC1",
@@ -156,10 +158,15 @@
         "at": "2026-07-31T00:00:00Z",
         "by": "change-epic-coherence",
         "note": "coherence_link APROBADO. Back-references épica/HU→change añadidas. Siguiente: TDD SS-001-a (red)."
+      },
+      {
+        "at": "2026-07-31T00:00:00Z",
+        "by": "tdd SS-001-a",
+        "note": "TDD arrancado: AccountProvisioningService (get-or-create idempotente). RED→GREEN verificado en contenedor. HU-002-AC1 y HU-002-AC3 passing. Falta: HU-002-AC2 (rollback), HU-001 (OAuth flow), repo Postgres real, endpoints, journey_smoke."
       }
     ],
     "updated_at": "2026-07-31T00:00:00Z",
-    "updated_by": "build:slice (coherence_link cerrado; fase=red)"
+    "updated_by": "tdd (SS-001-a en curso)"
   },
   "history": [],
   "releases": []
