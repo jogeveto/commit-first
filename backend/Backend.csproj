@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Empleabilidad.Api</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Scaffold del backend .NET Core (API + orquestación).
+    Sin dependencias de negocio aún: solo el host web y health checks.
+    Las dependencias (EF Core, Npgsql, autenticación) se agregan por slice,
+    validadas contra .claude/config/stack-allowlist.json.
+  -->
+
+</Project>

@@ -1,0 +1,45 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT:-${CLAUDE_PROJECT_DIR:-.}/.claude/skills/trycore/../../..}/scripts/estado-documental.sh\" \"${CLAUDE_PROJECT_DIR:-.}\"",
+            "async": false
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT:-${CLAUDE_PROJECT_DIR:-.}/.claude/skills/trycore/../../..}/scripts/lib/run-trycore-hook.sh\" post-write \"${CLAUDE_TOOL_FILE_PATH:-}\"",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT:-${CLAUDE_PROJECT_DIR:-.}/.claude/skills/trycore/../../..}/scripts/check-todos.sh\" \"${CLAUDE_PROJECT_DIR:-.}\"",
+            "async": false
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT:-${CLAUDE_PROJECT_DIR:-.}/.claude/skills/trycore/../../..}/scripts/reflect-session.sh\" \"${CLAUDE_PROJECT_DIR:-.}\"",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

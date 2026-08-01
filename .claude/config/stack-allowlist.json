@@ -1,0 +1,41 @@
+{
+  "_comment": "Allowlist de dependencias del proyecto. Derivada de la sección de requisitos técnicos del PRD. El hook stack-guard.sh bloquea dependencias fuera de `allow` al editar package.json (frontend Node). El backend .NET y el microservicio Python se rigen por el mismo PRD; ver polyglot_stack.",
+  "source": "docs/01-prd/asistente-empleabilidad-ia.md#7-requisitos-técnicos",
+  "version": "1.0",
+  "runtime": {
+    "node": ">=18.18",
+    "packageManager": "npm"
+  },
+  "polyglot_stack": {
+    "frontend": "React (SPA) — Node/npm",
+    "backend": ".NET Core (APIs y orquestación)",
+    "ia": "LLM local (Llama/Mistral) — inferencia on-premise, sin APIs de IA de pago",
+    "ats_service": "Python (microservicio NLP para % match ATS)",
+    "datos": "PostgreSQL"
+  },
+  "allow": [
+    "react",
+    "react-dom",
+    "react-router-dom",
+    "typescript",
+    "vite",
+    "@vitejs/plugin-react",
+    "axios"
+  ],
+  "deny_examples": [
+    "openai",
+    "@anthropic-ai/sdk",
+    "cohere-ai",
+    "@google/generative-ai"
+  ],
+  "rationale": {
+    "react": "PRD §7: Frontend React (SPA).",
+    "react-dom": "Render de React en el navegador.",
+    "react-router-dom": "Navegación SPA del sitemap (login → perfil → vacantes → CV → auditoría).",
+    "typescript": "Tipado del frontend (a confirmar en scaffold).",
+    "vite": "Toolchain de build/dev del SPA (a confirmar en scaffold).",
+    "@vitejs/plugin-react": "Plugin React para Vite.",
+    "axios": "Cliente HTTP hacia la API .NET (JWT por User_ID).",
+    "_deny_note": "Prohibidas las SDK de IA de pago: el PRD exige LLM local (O4, costo $0). deny_examples lista las más comunes a bloquear."
+  }
+}

@@ -1,0 +1,5 @@
+# Microservicio ATS (auditor de match) — scaffold.
+# Solo el servidor web por ahora. Las libs NLP (spaCy/scikit-learn) se agregan
+# en el slice de EP-006, no antes (evita dependencias sin usar).
+fastapi==0.115.0
+uvicorn[standard]==0.30.6

@@ -1,0 +1,61 @@
+# Orquestación del Asistente de Empleabilidad IA — scaffold end-to-end.
+# Todo corre en contenedores; el host no necesita .NET SDK, Python ni node instalados.
+# Levantar:  docker compose up --build
+# Verificar: /health de cada servicio.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-empleo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-empleo_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-empleabilidad}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-empleo} -d ${POSTGRES_DB:-empleabilidad}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      # Cadena de conexión (la usará EP-002; aquí solo se inyecta el patrón).
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=${POSTGRES_DB:-empleabilidad};Username=${POSTGRES_USER:-empleo};Password=${POSTGRES_PASSWORD:-empleo_dev}"
+      ATS_SERVICE_URL: "http://ats-service:8000"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ats-service:
+    build: ./ats-service
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: "http://localhost:8080"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

@@ -1,0 +1,156 @@
+{
+  "version": "1.0",
+  "harness_phase": "authoring",
+  "scaffold": {
+    "confirmed": true,
+    "confirmed_by": "build:onboard (verificado por ejecución: docker compose up + /health de los 4 servicios)",
+    "confirmed_at": "2026-07-31T00:00:00Z",
+    "notes": "Scaffold end-to-end containerizado (React+Vite / .NET8 API / Python FastAPI / PostgreSQL16). Verificado: backend /health y /api/ping OK, ats /health y /match OK, frontend sirve SPA, DB con esquema base multi-tenant (users + tenant_probe). Host sin toolchains (container-first). Sin lógica de negocio."
+  },
+  "design_source": {
+    "applies": true,
+    "confirmed": true,
+    "confirmed_by": "usuario (aprobación humana del prototipo v2 en revisión)",
+    "confirmed_at": "2026-07-31T00:00:00Z",
+    "source": "docs/07-prototipo/index.html",
+    "notes": "Prototipo clickeable v2 APROBADO. Vacante↔CV 1:1 cableado + seguimiento de postulación (HU-020). Fuente de verdad del gate ux-fidelity-reviewer para todas las HU con UI."
+  },
+  "active_slice": {
+    "epica": "EP-001",
+    "hus": [
+      "HU-001",
+      "HU-002",
+      "HU-003"
+    ],
+    "openspec_change": "autenticacion-identidad-linkedin-oauth2",
+    "branch": "feature/ep-001-autenticacion-linkedin-oauth2",
+    "phase": "change",
+    "layer": "foundational",
+    "gates": {
+      "dor": true,
+      "tdd": false,
+      "journey_smoke": false,
+      "coherence_link": false,
+      "data": false,
+      "fidelity": false,
+      "api": false,
+      "wiring_verified": false,
+      "dod": false
+    },
+    "sub_slices": [
+      {
+        "id": "EP-001-a",
+        "title": "Backend OAuth2 + provisión de cuenta (HU-001 backend, HU-002)",
+        "hus": [
+          "HU-001",
+          "HU-002"
+        ],
+        "status": "pending",
+        "journey_smoke": false
+      },
+      {
+        "id": "EP-001-b",
+        "title": "Middleware de sesión + endpoints protegidos (HU-003)",
+        "hus": [
+          "HU-003"
+        ],
+        "status": "pending",
+        "journey_smoke": false
+      },
+      {
+        "id": "EP-001-c",
+        "title": "Pantalla de login React + cableado end-to-end (HU-001 UI)",
+        "hus": [
+          "HU-001"
+        ],
+        "status": "pending",
+        "journey_smoke": false
+      }
+    ],
+    "wiring_checklist": [
+      {
+        "id": "HU-001-AC1",
+        "kind": "hu_ac",
+        "ref": "HU-001#happy-oauth-exitoso",
+        "status": "failing"
+      },
+      {
+        "id": "HU-001-AC2",
+        "kind": "hu_ac",
+        "ref": "HU-001#error-consentimiento-rechazado",
+        "status": "failing"
+      },
+      {
+        "id": "HU-001-AC3",
+        "kind": "hu_ac",
+        "ref": "HU-001#edge-state-csrf-invalido",
+        "status": "failing"
+      },
+      {
+        "id": "HU-002-AC1",
+        "kind": "hu_ac",
+        "ref": "HU-002#happy-provision-primer-acceso",
+        "status": "failing"
+      },
+      {
+        "id": "HU-002-AC2",
+        "kind": "hu_ac",
+        "ref": "HU-002#error-fallo-persistir-cuenta",
+        "status": "failing"
+      },
+      {
+        "id": "HU-002-AC3",
+        "kind": "hu_ac",
+        "ref": "HU-002#edge-recurrente-no-duplica",
+        "status": "failing"
+      },
+      {
+        "id": "HU-003-AC1",
+        "kind": "hu_ac",
+        "ref": "HU-003#happy-token-valido-resuelve-userid",
+        "status": "failing"
+      },
+      {
+        "id": "HU-003-AC2",
+        "kind": "hu_ac",
+        "ref": "HU-003#error-token-ausente-invalido-401",
+        "status": "failing"
+      },
+      {
+        "id": "HU-003-AC3",
+        "kind": "hu_ac",
+        "ref": "HU-003#edge-token-expirado-401",
+        "status": "failing"
+      },
+      {
+        "id": "INT-spa-api",
+        "kind": "integration_point",
+        "ref": "react-spa→dotnet-api (login→callback→sesión)",
+        "status": "failing"
+      },
+      {
+        "id": "INT-api-db",
+        "kind": "integration_point",
+        "ref": "dotnet-api→postgres (provisión users por User_ID)",
+        "status": "failing"
+      },
+      {
+        "id": "INT-api-linkedin",
+        "kind": "integration_point",
+        "ref": "dotnet-api→ILinkedInClient (mock-first; real con credenciales)",
+        "status": "failing"
+      }
+    ],
+    "progress_log": [
+      {
+        "at": "2026-07-31T00:00:00Z",
+        "by": "dor-dod-gatekeeper",
+        "note": "DoR PASA. Gate de tamaño activado (≥3 capas) → 3 sub-slices. Mock-first para LinkedIn (sin credenciales reales aún)."
+      }
+    ],
+    "updated_at": "2026-07-31T00:00:00Z",
+    "updated_by": "build:slice (dor→change)"
+  },
+  "history": [],
+  "releases": []
+}

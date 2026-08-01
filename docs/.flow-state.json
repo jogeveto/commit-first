@@ -1,0 +1,10 @@
+{
+  "last_completed_step": "done",
+  "params": {
+    "slug": "asistente-empleabilidad-ia",
+    "framework": "valor-esfuerzo"
+  },
+  "timestamp": "2026-07-31T00:00:00Z",
+  "history_pending": [],
+  "notes": "Pipeline 7/7 completo y aprobado por todos los gates (PRD, épicas, mapa, 18 HU BDD+INVEST, backlog/trazabilidad, priorización, flows). Pendiente de sprint: fijar N (umbral palabras clave) en HU-013. Listo para Fase 2 (build harness)."
+}

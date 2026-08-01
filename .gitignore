@@ -1,0 +1,21 @@
+# Secretos
+.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Backend .NET
+backend/bin/
+backend/obj/
+
+# Python
+ats-service/__pycache__/
+ats-service/**/__pycache__/
+*.pyc
+.venv/
+
+# OS
+Thumbs.db
+.DS_Store
