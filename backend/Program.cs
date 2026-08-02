@@ -37,10 +37,12 @@ var jwtIssuer = config["JWT_ISSUER"] ?? "empleabilidad";
 var callbackUri = config["LinkedIn:RedirectUri"] ?? "http://localhost:8080/auth/linkedin/callback";
 // Origen del SPA al que se devuelve al usuario tras el callback (HU-001 AC1/AC2).
 var frontendUrl = (config["FRONTEND_URL"] ?? "http://localhost:5173").TrimEnd('/');
-var linkedInClientId = config["LINKEDIN_CLIENT_ID"];
-var linkedInClientSecret = config["LINKEDIN_CLIENT_SECRET"];
-var hasRealLinkedIn = !string.IsNullOrWhiteSpace(linkedInClientId)
-                      && !string.IsNullOrWhiteSpace(linkedInClientSecret);
+// Las decisiones del flujo (usar el proveedor real o el simulado, y cómo se
+// construye la URL de autorización) viven en LinkedInOAuthOptions, que SÍ tiene
+// tests: aquí dentro eran inalcanzables y se podían romper sin que nada fallara.
+var oauth = new LinkedInOAuthOptions(
+    config["LINKEDIN_CLIENT_ID"], config["LINKEDIN_CLIENT_SECRET"], callbackUri);
+var hasRealLinkedIn = oauth.TieneCredencialesReales;
 
 // --- Inyección de dependencias del flujo de autenticación ---
 builder.Services.AddSingleton<IAuthStateStore, InMemoryAuthStateStore>();
@@ -55,7 +57,7 @@ if (hasRealLinkedIn)
     builder.Services.AddHttpClient();
     builder.Services.AddScoped<ILinkedInClient>(sp => new RealLinkedInClient(
         sp.GetRequiredService<IHttpClientFactory>().CreateClient(),
-        linkedInClientId!, linkedInClientSecret!, callbackUri));
+        oauth.ClientId!, oauth.ClientSecret!, callbackUri));
 }
 else
 {
@@ -104,13 +106,7 @@ app.MapGet("/auth/linkedin/start", (IAuthStateStore stateStore) =>
 
     if (hasRealLinkedIn)
     {
-        var authorizeUrl =
-            "https://www.linkedin.com/oauth/v2/authorization?response_type=code" +
-            $"&client_id={Uri.EscapeDataString(linkedInClientId!)}" +
-            $"&redirect_uri={Uri.EscapeDataString(callbackUri)}" +
-            $"&state={Uri.EscapeDataString(state)}" +
-            "&scope=openid%20profile";
-        return Results.Redirect(authorizeUrl);
+        return Results.Redirect(oauth.ConstruirUrlDeAutorizacion(state));
     }
 
     var mockConsent = $"{callbackUri}?code=mock-auth-code&state={Uri.EscapeDataString(state)}";
@@ -155,7 +151,7 @@ app.MapGet("/auth/linkedin/callback", async (
     }
 
     if (result.Outcome == AuthOutcome.Success)
-        return Results.Redirect($"{frontendUrl}/auth/callback#token={Uri.EscapeDataString(result.Token!)}");
+        return Results.Redirect(LinkedInOAuthOptions.UrlDeExito(frontendUrl, result.Token!));
 
     var reason = result.Outcome switch
     {
@@ -164,8 +160,7 @@ app.MapGet("/auth/linkedin/callback", async (
         AuthOutcome.ProvisioningFailed => "provisioning_failed",
         _ => "unknown"
     };
-    return Results.Redirect(
-        $"{frontendUrl}/login?error={reason}&message={Uri.EscapeDataString(result.Message ?? string.Empty)}");
+    return Results.Redirect(LinkedInOAuthOptions.UrlDeError(frontendUrl, reason, result.Message));
 });
 
 // --- HU-003 · Endpoint protegido de prueba -------------------------------------

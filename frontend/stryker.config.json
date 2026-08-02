@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": [
+    "Mutation testing del SPA. Automatiza el oráculo que faltaba: la suite verifica",
+    "el producto, pero nada verificaba la suite. Cinco auditorías seguidas hallaron",
+    "asserts que no podían fallar (guard desactivable, botón sin cablear, aviso que",
+    "no se renderiza), todos con la suite en verde.",
+    "main.tsx SÍ se muta: una versión previa lo excluía, y ahí vivía justamente un",
+    "superviviente (sustituir el RouterProvider por un div dejaba la app muerta con",
+    "la suite en verde). El E2E es quien lo mata; excluirlo del gate lo ocultaba.",
+    "Ejecutar: docker compose exec -T frontend npm run test:mutation"
+  ],
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "reporters": ["progress", "clear-text", "html"],
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!src/vite-env.d.ts"
+  ],
+  "thresholds": { "high": 85, "low": 70, "break": 65 },
+  "timeoutMS": 30000
+}

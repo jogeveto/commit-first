@@ -1,0 +1,15 @@
+{
+  "name": "empleabilidad-e2e",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Journeys end-to-end contra el stack real en modo mock. Cubre el nivel más externo del sistema, que antes solo se verificaba a mano.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "_versionado": "La versión de @playwright/test debe coincidir EXACTA con la de la imagen de docker-compose (mcr.microsoft.com/playwright:vX). Con un rango (^) npm trae una más nueva que la de los navegadores instalados en la imagen y todos los tests fallan al arrancar el navegador.",
+  "devDependencies": {
+    "@playwright/test": "1.49.1",
+    "@types/node": "^22.10.2"
+  }
+}

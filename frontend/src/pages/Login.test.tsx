@@ -2,7 +2,13 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Login } from './Login'
-import { linkedInLoginUrl } from '../api/client'
+
+// La RUTA se escribe LITERAL, no se importa del módulo bajo prueba. Antes se
+// comparaba contra `linkedInLoginUrl` —la misma constante que usa el código—, así
+// que el assert no podía fallar aunque la ruta apuntara a un 404.
+// Regla: ningún assert debe tomar del código el valor que pretende verificar.
+// El host sí es configuración legítima (cambia entre entornos); la ruta no.
+const RUTA_ESPERADA = '/auth/linkedin/start'
 
 // HU-001 — la pantalla de login. Cubre la cláusula terminal del AC2 ("vuelvo a la
 // pantalla de login CON UN MENSAJE CLARO"), que hasta ahora solo se verificaba a
@@ -64,6 +70,7 @@ describe('Login', () => {
       Object.defineProperty(window, 'location', { configurable: true, value: original })
     }
 
-    expect(asignada).toEqual([linkedInLoginUrl])
+    expect(asignada).toHaveLength(1)
+    expect(new URL(asignada[0]).pathname).toBe(RUTA_ESPERADA)
   })
 })

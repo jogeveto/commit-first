@@ -1,0 +1,24 @@
+# Override para ejecutar los journeys E2E DENTRO de la red de compose.
+#
+# El navegador del contenedor de E2E no puede usar `localhost`: ahí `localhost` es
+# el propio contenedor, no el host. Por eso el SPA debe apuntar a `backend` y el
+# backend debe devolver al usuario a `frontend`, ambos por nombre de servicio.
+#
+# Se combina con el override de modo mock (el consentimiento real no se automatiza):
+#   docker compose -f docker-compose.yml -f docker-compose.mock.yml -f docker-compose.e2e.yml up -d
+#   docker compose -f docker-compose.yml -f docker-compose.mock.yml -f docker-compose.e2e.yml run --rm e2e
+services:
+  frontend:
+    environment:
+      VITE_API_URL: "http://backend:8080"
+    # El E2E ejercita el ARTEFACTO DE PRODUCCIÓN, no el dev server. Motivo real:
+    # en bind mounts de Windows el watcher de Vite no recibe eventos y servía
+    # módulos cacheados, así que el E2E podía estar validando código que ya no
+    # existía en el repositorio — falsa garantía en la red más externa.
+    # Con `build && preview` lo que se prueba es exactamente lo que se desplegaría.
+    command: sh -c "npm run build && npx vite preview --host --port 5173"
+
+  backend:
+    environment:
+      FRONTEND_URL: "http://frontend:5173"
+      LinkedIn__RedirectUri: "http://backend:8080/auth/linkedin/callback"

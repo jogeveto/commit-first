@@ -72,5 +72,25 @@ services:
     depends_on:
       - backend
 
+  # Journeys end-to-end contra el stack real. No arranca con `up`: se invoca a
+  # demanda con `docker compose run --rm e2e` (perfil `test`), y exige el stack en
+  # MODO MOCK — el consentimiento real de LinkedIn no se puede automatizar.
+  #   docker compose -f docker-compose.yml -f docker-compose.mock.yml up -d
+  #   docker compose -f docker-compose.yml -f docker-compose.mock.yml run --rm e2e
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.49.1-noble
+    profiles: ["test"]
+    working_dir: /e2e
+    environment:
+      E2E_BASE_URL: "http://frontend:5173"
+      E2E_API_URL: "http://backend:8080"
+      CI: "true"
+    volumes:
+      - ./e2e:/e2e
+    command: sh -c "npm install --no-audit --no-fund && npx playwright test"
+    depends_on:
+      - frontend
+      - backend
+
 volumes:
   db_data:

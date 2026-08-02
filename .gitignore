@@ -22,3 +22,12 @@ Thumbs.db
 
 # Artefactos del MCP de navegador (evidencia efímera de verificación visual)
 .playwright-mcp/
+
+# E2E (Playwright)
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+
+# Informes de mutation testing
+frontend/reports/
+backend/StrykerOutput/

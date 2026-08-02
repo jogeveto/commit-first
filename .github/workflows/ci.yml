@@ -1,0 +1,132 @@
+name: CI
+
+# Cinco auditorías independientes encontraron, una tras otra, asserts que no podían
+# fallar: la suite verificaba el producto pero nada verificaba la suite. Este
+# pipeline existe para que eso deje de depender de que alguien se acuerde.
+#
+# Cuatro redes, de dentro hacia fuera:
+#   1. tests            — ¿el producto hace lo que debe?
+#   2. contrato         — ¿la API cumple su contrato sobre el stack real?
+#   3. E2E              — ¿la aplicación funciona como la usa una persona?
+#   4. mutación         — ¿los tests de 1 pueden fallar siquiera?
+# La cuarta es la que impide la recaída; sin ella las otras tres se degradan en
+# silencio.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend · tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Levantar el stack en modo mock
+        run: docker compose -f docker-compose.yml -f docker-compose.mock.yml up -d --build db backend
+      - name: Esperar a la base de datos
+        run: |
+          for i in $(seq 1 30); do
+            docker compose exec -T db pg_isready -U empleo -d empleabilidad && exit 0
+            sleep 2
+          done
+          echo "La base de datos no respondió a tiempo"; exit 1
+      - name: Tests (incluye integración contra PostgreSQL)
+        run: |
+          docker run --rm --network "$(basename "$PWD")_default" \
+            -v "$PWD/backend:/src" -w /src mcr.microsoft.com/dotnet/sdk:8.0 \
+            dotnet test tests/Backend.Tests/Backend.Tests.csproj --nologo
+
+  frontend:
+    name: Frontend · tests, typecheck y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      # El typecheck es parte del build: `npm run build` = tsc -b && vite build.
+      # Faltaban @types/react y estuvo roto sin que nadie lo notara.
+      - run: npm run build
+        working-directory: frontend
+
+  contrato-y-e2e:
+    name: Contrato de API y journeys E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Levantar el stack (modo mock + red interna para E2E)
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.mock.yml -f docker-compose.e2e.yml \
+            up -d --build db backend frontend
+      - name: Esperar a que el backend responda
+        run: |
+          for i in $(seq 1 40); do
+            curl -sf http://localhost:8080/health && exit 0
+            sleep 3
+          done
+          docker compose logs backend; exit 1
+      - name: Contrato de API
+        # Aborta con exit 2 si detecta credenciales reales, en vez de dar verdes
+        # engañosos. En CI siempre es modo mock.
+        run: bash tests/smoke/ep-001-api-contract.sh
+      - name: Journeys E2E contra el artefacto de producción
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.mock.yml -f docker-compose.e2e.yml \
+            run --rm e2e
+      - name: Guardar evidencia si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-fallos
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+
+  mutacion:
+    name: Mutation testing · verifica que los tests puedan fallar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Levantar la base de datos
+        run: docker compose -f docker-compose.yml -f docker-compose.mock.yml up -d --build db backend
+      - name: Esperar a la base de datos
+        run: |
+          for i in $(seq 1 30); do
+            docker compose exec -T db pg_isready -U empleo -d empleabilidad && exit 0
+            sleep 2
+          done
+          exit 1
+      # Rompe el build si el score cae por debajo del umbral (trinquete: el umbral
+      # sube cuando el score sube, nunca al revés).
+      - name: Backend
+        run: |
+          docker run --rm --network "$(basename "$PWD")_default" \
+            -v "$PWD/backend:/src" -w /src mcr.microsoft.com/dotnet/sdk:8.0 \
+            sh -c "dotnet tool restore && dotnet stryker"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: Frontend
+        run: npm run test:mutation
+        working-directory: frontend
+      - name: Guardar informes de mutación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-mutacion
+          path: |
+            backend/StrykerOutput/
+            frontend/reports/

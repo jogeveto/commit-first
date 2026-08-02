@@ -1,0 +1,18 @@
+# Override que fuerza el MODO MOCK de la frontera de LinkedIn.
+#
+# Por qué existe: el backend elige FakeLinkedInClient o RealLinkedInClient según
+# haya credenciales en el entorno. Sin este archivo, el modo dependía de si `.env`
+# tenía valores, y `docker compose up -d frontend` recreaba el backend por
+# `depends_on` devolviéndole las credenciales — cambiando el modo EN SILENCIO y
+# dejando el contrato en rojo sin que nadie lo notara. Ocurrió de verdad.
+#
+# Con esto el modo es explícito y reproducible:
+#   mock (tests, contrato, E2E):
+#     docker compose -f docker-compose.yml -f docker-compose.mock.yml up -d
+#   real (verificación contra LinkedIn):
+#     docker compose up -d
+services:
+  backend:
+    environment:
+      LINKEDIN_CLIENT_ID: ""
+      LINKEDIN_CLIENT_SECRET: ""

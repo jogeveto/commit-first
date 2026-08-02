@@ -25,7 +25,11 @@
     "@types/react-dom",
     "vitest",
     "jsdom",
-    "@testing-library/react"
+    "@testing-library/react",
+    "@stryker-mutator/core",
+    "@stryker-mutator/vitest-runner",
+    "@playwright/test",
+    "@types/node"
   ],
   "allow_dotnet": {
     "_comment": "Paquetes NuGet aprobados para el backend .NET. Mismo criterio que `allow`: derivados del PRD §7. Se registran por slice al agregarse.",
@@ -33,7 +37,8 @@
     "System.IdentityModel.Tokens.Jwt": "EP-001 design D4: emisión de la sesión JWT HS256 con claim sub=User_ID, firmada server-side.",
     "Microsoft.AspNetCore.Authentication.JwtBearer": "EP-001 design D4 / HU-003: middleware que valida la sesión (firma, emisor, expiración con ClockSkew=0) y resuelve el User_ID de tenancy.",
     "Microsoft.NET.Test.Sdk / xunit / xunit.runner.visualstudio": "Arnés de pruebas del backend (TDD del arnés de construcción).",
-    "Microsoft.AspNetCore.Mvc.Testing": "EP-001 SS-b: pruebas de integración HTTP del middleware de sesión (WebApplicationFactory), solo en el proyecto de tests."
+    "Microsoft.AspNetCore.Mvc.Testing": "EP-001 SS-b: pruebas de integración HTTP del middleware de sesión (WebApplicationFactory), solo en el proyecto de tests.",
+    "dotnet-stryker": "Mutation testing del backend (herramienta local, .config/dotnet-tools.json). Rompe el build si el score baja del umbral. No se excluye ningún archivo: una versión previa excluía Program.cs y ahí sobrevivían mutaciones graves (inyectar el cliente simulado con credenciales reales, quitar el `state` CSRF, sesión de 365 días, emisor sin validar, CORS abierto)."
   },
   "deny_examples": [
     "openai",
@@ -54,6 +59,10 @@
     "vitest": "Runner de pruebas del SPA (EP-001): el bug de idempotencia del callback se corrigió sin regresión y no había forma de cubrirlo. Es el runner nativo de Vite, ya en el stack. Solo desarrollo.",
     "jsdom": "Entorno DOM para vitest: la lógica de sesión usa sessionStorage y el fragmento de la URL. Solo desarrollo.",
     "@testing-library/react": "Tests de COMPONENTE (EP-001): sin ellos se podía desactivar el guard de rutas o dejar el botón de salir sin cablear con toda la suite en verde — verificado por mutación. Solo desarrollo.",
-    "_deny_note": "Prohibidas las SDK de IA de pago: el PRD exige LLM local (O4, costo $0). deny_examples lista las más comunes a bloquear."
+    "_deny_note": "Prohibidas las SDK de IA de pago: el PRD exige LLM local (O4, costo $0). deny_examples lista las más comunes a bloquear.",
+    "@stryker-mutator/core": "Mutation testing del SPA (solo desarrollo). Automatiza el oráculo que faltaba: comprueba que cada test PUEDA fallar. Cinco auditorías seguidas hallaron asserts incomprobables; sin esta red la disciplina depende de que alguien se acuerde.",
+    "@stryker-mutator/vitest-runner": "Adaptador de Stryker para el runner que ya usa el proyecto (vitest). Solo desarrollo.",
+    "@playwright/test": "Journeys end-to-end contra el artefacto de producción (solo desarrollo). Cubre la raíz de composición —main.tsx y el router real—, que es donde vivieron los defectos que ninguna otra red atrapaba. La versión debe coincidir EXACTA con la imagen de compose.",
+    "@types/node": "Tipos de Node para la configuración del E2E (process.env). Solo desarrollo."
   }
 }

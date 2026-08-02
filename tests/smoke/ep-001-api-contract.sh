@@ -53,8 +53,8 @@ case "$LOC_MODO" in
   *linkedin.com*)
     echo "ABORTADO: el backend corre con credenciales REALES de LinkedIn."
     echo "  /auth/linkedin/start → linkedin.com (no se puede simular el consentimiento)."
-    echo "  Para el contrato, levanta el backend en modo mock:"
-    echo "    LINKEDIN_CLIENT_ID= LINKEDIN_CLIENT_SECRET= docker compose up -d backend"
+    echo "  Para el contrato, levanta el stack en modo mock:"
+    echo "    docker compose -f docker-compose.yml -f docker-compose.mock.yml up -d"
     exit 2 ;;
   *) echo "(modo mock detectado — se puede simular el flujo OAuth2)" ;;
 esac

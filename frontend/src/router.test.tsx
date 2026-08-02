@@ -55,4 +55,26 @@ describe('router de la aplicación', () => {
 
     expect(await screen.findByText('Entra en un clic')).toBeTruthy()
   })
+
+  // Con sesión, la raíz debe llevar al PERFIL (no a otra pantalla cualquiera).
+  // Mutación: apuntar el índice a /vacantes → rojo.
+  it('con sesión, la raíz lleva al perfil', async () => {
+    saveToken('jwt-de-prueba')
+
+    montarEn('/')
+
+    expect(await screen.findByText('Mi perfil')).toBeTruthy()
+  })
+
+  // El backend redirige a `{frontend}/auth/callback#token=` tras autenticar: si esa
+  // ruta no existe en el router, el usuario aterriza en una pantalla en blanco.
+  // Mutación: renombrar la ruta /auth/callback → rojo.
+  it('la ruta del callback existe y procesa la sesión', async () => {
+    window.history.replaceState(null, '', '/auth/callback#token=jwt-del-callback')
+
+    montarEn('/auth/callback#token=jwt-del-callback')
+
+    // Aterriza en el área autenticada, no en una pantalla sin ruta.
+    expect(await screen.findByText('Mi perfil')).toBeTruthy()
+  })
 })
