@@ -8,9 +8,11 @@ namespace Empleabilidad.Api.Auth;
 /// (`/v2/userinfo`) para obtener `sub` + nombre. Se inyecta solo cuando
 /// LINKEDIN_CLIENT_ID/SECRET están presentes.
 ///
-/// NOTA: este camino real no se ejercita en el entorno actual (sin credenciales) —
-/// queda registrado como WC-002 (pendiente de verificación con proveedor real). El
-/// comportamiento del sistema es 100% verificable vía FakeLinkedInClient.
+/// VERIFICADO contra LinkedIn real (WC-002, 2026-08-01): con credenciales en `.env`
+/// el flujo completo provisiona la cuenta con el `sub` OIDC auténtico. Lo que NO es
+/// automatizable es la regresión de este camino: exige consentimiento humano en
+/// LinkedIn, así que el contrato y el E2E corren contra FakeLinkedInClient y esta
+/// clase queda cubierta solo por la verificación manual documentada.
 public class RealLinkedInClient : ILinkedInClient
 {
     private const string TokenEndpoint = "https://www.linkedin.com/oauth/v2/accessToken";

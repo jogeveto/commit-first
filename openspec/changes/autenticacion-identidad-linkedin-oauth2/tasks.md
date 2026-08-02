@@ -51,6 +51,7 @@
 
 - [x] 4.1 Stack-guard: toda dependencia nueva está en `stack-allowlist.json` con justificación. — **Backend** (`allow_dotnet`): Npgsql 8.0.5, System.IdentityModel.Tokens.Jwt 8.1.2, JwtBearer 8.0.11, Mvc.Testing 8.0.11 (solo tests). **Frontend** (`allow`): `@types/react` y `@types/react-dom` (faltaban en el scaffold y `npm run build` fallaba el typecheck), y `vitest`, `jsdom`, `@testing-library/react` (solo desarrollo; sin ellas no había forma de cubrir el bug de idempotencia del callback ni el guard/logout). `@testing-library/jest-dom` se instaló y se retiró: no se importaba en ninguna parte.
 - [x] 4.2 Secreto: verificar que el client secret / JWT key nunca llegan al bundle del frontend (WC-006). — verificado por ejecución: sin coincidencias de secretos en `frontend/src`; la única variable expuesta al cliente es `VITE_API_URL` (una URL). El flujo mantiene el `state` y el secret server-side.
+- [x] 4.5 Redes de calidad permanentes (tras la 5ª auditoría): E2E con Playwright contra el artefacto de producción (6 journeys), mutation testing sin exclusiones (backend 53,89 % · frontend 74,07 %), CI que corre las cuatro redes, y modo mock/real explícito con `docker-compose.mock.yml`. La lógica de decisión del flujo salió de `Program.cs` a `LinkedInOAuthOptions` para que sea verificable.
 - [ ] 4.3 wiring_verified: verificación adversarial independiente (contexto virgen) de los items del `wiring_checklist`. — EN CURSO
 - [ ] 4.4 DoD (reducido, inner loop) verde → PR a `main` + archivar el change en el mismo PR.
 
@@ -78,5 +79,5 @@ Corregido; `tsc -b` y `npm run build` salen con código 0.
 
 ## Gates de verificación (fase 5)
 
-- [x] `api` — 22 requests / 38 aserciones sin desviaciones (agente) + `tests/smoke/ep-001-api-contract.sh` **26/26** repetible, sin dependencias nuevas.
+- [x] `api` — 22 requests / 38 aserciones sin desviaciones (agente) + `tests/smoke/ep-001-api-contract.sh` **27/27** repetible, sin dependencias nuevas.
 - [x] `data` — invariantes verificadas con SQL real; idempotencia cubre la carrera check-then-act vía `ON CONFLICT`. Desviación D1 (guard de `sub` vacío) **corregida** en `LinkedInProfile` con TDD.
